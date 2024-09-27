@@ -1,0 +1,227 @@
+{
+    "site": "MEDIATOR1",
+    "statusDescription": "Success",
+    "comments": null,
+    "listTypeName": "OBJECTS_LIST",
+    "statusName": "OK",
+    "objectTapeInfoList": [],
+    "listPosition": [
+        "1722424327",
+        "287",
+        "0"
+    ],
+    "listType": 1,
+    "objectInfoList": [
+        {
+            "numberOfComplexFolders": -1,
+            "relatedRequests": [],
+            "sizeInBytes": 40186880,
+            "diskInstances": [
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "mover1_disk",
+                            "path": "",
+                            "fileName": "APIDNATest2.mxf"
+                        }
+                    ],
+                    "arrayName": "NLD_DISK",
+                    "id": 0
+                },
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "test-container",
+                            "path": "",
+                            "fileName": "APIDNATest2.mxf"
+                        }
+                    ],
+                    "arrayName": "AZURE_BLOB",
+                    "id": 1
+                },
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "glacier-testing",
+                            "path": "",
+                            "fileName": "APIDNATest2.mxf"
+                        }
+                    ],
+                    "arrayName": "ECS",
+                    "id": 2
+                },
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "aws-saurabhi",
+                            "path": "",
+                            "fileName": "APIDNATest2.mxf"
+                        }
+                    ],
+                    "arrayName": "S3_GIR",
+                    "id": 3
+                },
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "glacier-saurabhi",
+                            "path": "",
+                            "fileName": "APIDNATest2.mxf"
+                        }
+                    ],
+                    "arrayName": "GCS",
+                    "id": 4
+                },
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "aws-saurabhi-da",
+                            "path": "",
+                            "fileName": "APIDNATest2.mxf"
+                        }
+                    ],
+                    "arrayName": "S3_DA",
+                    "id": 5
+                }
+            ],
+            "sizeInKB": 39245,
+            "source": "TestCifs",
+            "uuid": null,
+            "modifiedOrDeleted": "CREATED_OR_MODIFIED",
+            "collectionName": "TEST",
+            "numberOfComplexFiles": -1,
+            "path": null,
+            "spm": null,
+            "statusDescription": null,
+            "inserted": true,
+            "archiveDate": 1720703035,
+            "complex": false,
+            "tapeInstances": [],
+            "toBeRepacked": false,
+            "statusName": null,
+            "files": [
+                "APIDNATest2.mxf"
+            ],
+            "objectName": "APIDNATest2.mxf",
+            "locked": false,
+            "statusCode": 0
+        },
+        {
+            "numberOfComplexFolders": -1,
+            "relatedRequests": [],
+            "sizeInBytes": 40186880,
+            "diskInstances": [
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "mover1_disk",
+                            "path": "",
+                            "fileName": "APIDNATest3.mxf"
+                        }
+                    ],
+                    "arrayName": "NLD_DISK",
+                    "id": 0
+                },
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "glacier-testing",
+                            "path": "",
+                            "fileName": "APIDNATest3.mxf"
+                        }
+                    ],
+                    "arrayName": "ECS",
+                    "id": 1
+                },
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "aws-saurabhi",
+                            "path": "",
+                            "fileName": "APIDNATest3.mxf"
+                        }
+                    ],
+                    "arrayName": "S3_GIR",
+                    "id": 2
+                },
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "aws-saurabhi-da",
+                            "path": "",
+                            "fileName": "APIDNATest3.mxf"
+                        }
+                    ],
+                    "arrayName": "S3_DA",
+                    "id": 3
+                },
+                {
+                    "storageClass": "NONE",
+                    "storageOptions": "-storage_class=NONE -storage_location=LOCAL",
+                    "components": [
+                        {
+                            "isInserted": true,
+                            "diskName": "glacier-saurabhi",
+                            "path": "",
+                            "fileName": "APIDNATest3.mxf"
+                        }
+                    ],
+                    "arrayName": "GCS",
+                    "id": 4
+                }
+            ],
+            "sizeInKB": 39245,
+            "source": "TestCifs",
+            "uuid": null,
+            "modifiedOrDeleted": "CREATED_OR_MODIFIED",
+            "collectionName": "TEST",
+            "numberOfComplexFiles": -1,
+            "path": null,
+            "spm": null,
+            "statusDescription": null,
+            "inserted": true,
+            "archiveDate": 1722424327,
+            "complex": false,
+            "tapeInstances": [],
+            "toBeRepacked": false,
+            "statusName": null,
+            "files": [
+                "APIDNATest3.mxf"
+            ],
+            "objectName": "APIDNATest3.mxf",
+            "locked": false,
+            "statusCode": 0
+        }
+    ],
+    "statusCode": 1000
+}

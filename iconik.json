@@ -1,0 +1,34 @@
+{
+    "AUTH_TOKEN" : "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
+    "APP_ID" : "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
+    "USER_IDS" : [
+        "c0706cc0-cead-11e9-9061-0a580a3c102d"
+    ],
+    "GROUP_IDS" : [
+        "b8e95938-c615-11e7-b5ab-6c4008b85488"
+    ],
+    "COLLECTION_ID" : "39da9c74-f068-11e9-887c-0a580a3cb953",
+    "FILE_MAPPING" : {
+        "VIEW_ID" : "ea7066d6-f077-11e9-9016-0a580a3c3d28",
+        "MAPPINGS" : {
+            "filename" : "FileName",
+            "proxy-path" : "ProxyPath",
+            "source-path" : "SourcePath",
+            "archive-name" : "ArchiveName",
+            "clip-name" : "ClipName",
+            "clipid" : "ClipId",
+            "tape-path" : "TapePath"
+        }
+
+    },
+    "CLIP_MAPPINGS" : [
+        {
+            "VIEW_ID" : "4aed314a-f12e-11e9-83f7-0a580a3f8d64",
+            "MAPPINGS" : {
+                "Directory" : "AwesomeClipDataOne",
+                "File Size" : "RealFileSize"
+            }
+        }
+    ]
+       
+}
