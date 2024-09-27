@@ -1,0 +1,50 @@
+{
+    "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
+    "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
+    "name": "SDNA_S3",
+    "method": "S3"
+}
+   
+{
+    "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
+    "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
+    "name": "SDNA_B2",
+    "method": "B2"
+}
+
+{
+    "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
+    "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
+    "name": "SDNA_GCS",
+    "method": "GCS"
+}
+
+{
+    "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
+    "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
+    "name": "SDNA_AZURE",
+    "method": "AZURE"
+}
+
+
+
+
+
+"name": [name
+]
+"purpose": [purpose
+]
+"method": [method
+]
+"access_id": [access_key,account_id
+]
+"connection_key": [secret_key,authorization_token,json_key,connection_string
+]
+"bucket_name": [bucket,bucket_name,container
+]
+"bucket_id": [bucket_id
+]
+"project_name": [project_name
+]
+"region": [region
+]

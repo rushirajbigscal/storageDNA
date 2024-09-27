@@ -1,0 +1,9 @@
+{
+    "action": "move",
+    "destination_folder": "D:\\storageDNA\\test",
+    "dry_run": "true",
+    "filename_filter": "*.???",
+    "filepath_filter": "*/m?t/*",
+    "filesize": 7708,
+    "filesize_filter": "grater"
+}
