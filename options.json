@@ -1,6 +1,6 @@
 {
-    "action": "move",
-    "destination_folder": "D:\\storageDNA\\test",
+    "action": "delete",
+    "destination_folder": "",
     "dry_run": "true",
     "filename_filter": "*.???",
     "filepath_filter": "*/m?t/*",

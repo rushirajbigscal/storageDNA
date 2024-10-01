@@ -1,0 +1,20 @@
+<update-job-progress duration="0" avg_bandwidth="232">
+      <progress jobid="729356D8-3C9D-A69E-3664-C9E153669560" cur_bandwidth="0" stguid="729356D8-3C9D-A69E-3664-C9E153669560" requestid="12">
+        <scanning>false</scanning>
+        <scanned>12</scanned>
+        <run-status>ANALYZING DELETE AND MOVE FILES</run-status>
+        <quick-index>true</quick-index>
+        <is_hyper>false</is_hyper>
+        <session>
+            <selected-files>12</selected-files>
+            <selected-bytes>4503744</selected-bytes>
+            <deleted-files>0</deleted-files>
+            <processed-files>12</processed-files>
+            <processed-bytes>4503744</processed-bytes>
+        </session>
+      </progress>
+    <transfers>
+    </transfers>
+    <transferred/>
+    <deleted/>
+</update-job-progress>
