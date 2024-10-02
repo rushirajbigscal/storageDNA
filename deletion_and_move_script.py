@@ -132,8 +132,6 @@ def process_files(args):
             if action == 'delete':
                 if dry_run:
                     print(f"Dry Run this file will be deleted: {file_path}")
-                    data = f'{file_info["Project Name"]},{totals["run_id"]},{totals["job_id"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
-                    append_to_csv_file(file_given,data)
                 else:
                     try:
                         os.remove(file_path)
@@ -148,8 +146,6 @@ def process_files(args):
                 if destination_folder:
                     if dry_run:
                         print(f"Dry Run this file will be moved from: {file_path} to {destination_folder}")
-                        data = f'{file_info["Project Name"]},{totals["run_id"]},{totals["job_id"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
-                        append_to_csv_file(file_given,data)
                     else:
                         try:
                             os.makedirs(destination_folder, exist_ok=True)
