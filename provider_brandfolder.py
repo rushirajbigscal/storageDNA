@@ -1,14 +1,13 @@
 import requests
 import argparse
 from action_functions import *
-from urllib import request
 import urllib3
 from datetime import datetime
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-VALID_MODES = ['upload', 'download', 'list']
+domain = "https://brandfolder.com"
 
 linux_dir = "/opt/sdna/bin"
 is_linux = 0
@@ -29,7 +28,7 @@ def get_list_brandfolder():
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
 
-    # response  = requests.get('https://brandfolder.com/api/v4/brandfolders', headers=headers).json()
+    # response  = requests.get(f'{domain}/api/v4/brandfolders', headers=headers).json()
     response  = {
             "data": [
                 {
@@ -77,18 +76,18 @@ def get_call_list_of_assets(collectionid):
         "fields":"updated_at",
         "include":"attachments"
         }
-    response  = requests.get(f'https://brandfolder.com/api/v4/collections/{collectionid}/assets',headers=headers,params=params).json()
+    response  = requests.get(f'{domain}/api/v4/collections/{collectionid}/assets',headers=headers,params=params).json()
 
     return response 
 
 
-def get_list_of_collection():
+def get_list_of_collections():
     headers = {
         'Accept': 'application/json',
         'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
         }
 
-    response  = requests.get(f'https://brandfolder.com/api/v4/collections',headers=headers).json()
+    response  = requests.get(f'{domain}/api/v4/collections',headers=headers).json()
 
     return response["data"]
 
@@ -107,21 +106,7 @@ def create_collection(brandfolder_id,collection_name):
         }
 
 
-    # response = requests.post(f'https://brandfolder.com/api/v4/brandfolders/{brandfolder_id}/collections', json=data,headers=headers)
-    response = {
-            "data": {
-                "id": "oqgkkd-fr5iv4-hh142d",
-                "type": "collections",
-                "attributes": {
-                "name": "Brandfolder - Print Ready",
-                "slug": "print-ready",
-                "tagline": "All Brandfolder's assets that are ready for print",
-                "public": "true",
-                "stealth": "false"
-                }
-            }
-            }
-
+    response = requests.post(f'{domain}/api/v4/brandfolders/{brandfolder_id}/collections', json=data,headers=headers)
     return response["data"]["id"]
 
 
@@ -130,24 +115,23 @@ def get_upload_request(file_path):
     'Accept': 'application/json',
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
-    response = requests.get(f'https://brandfolder.com/api/v4/upload_requests',headers=headers).json()
+    response = requests.get(f'{domain}/api/v4/upload_requests',headers=headers).json()
     upload_url = response["upload_url"]
     with open(file_path, 'rb') as f:
         x = requests.put(upload_url,data=f)
         print(x.text)
-    print(upload_url)
     return upload_url
 
 def create_asset_call(collection_id,upload_url,file_path):
     headers = {
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
-
+    file_path = os.path.normpath(file_path)
     body = {
         "data": {
             "attributes": [
             {
-                "name": file_path.split("\\")[-1],
+                # "name": file_path.split("\\")[-1],
                 "attachments": [
                 {
                     "url": upload_url,
@@ -159,7 +143,7 @@ def create_asset_call(collection_id,upload_url,file_path):
         },
         "section_key": "28w9gmqhhbx33bwn5nnpqrkw"
         }
-    response = requests.post(f'https://brandfolder.com/api/v4/collections/{collection_id}/assets',headers=headers,json=body).json()
+    response = requests.post(f'{domain}/api/v4/collections/{collection_id}/assets',headers=headers,json=body).json()
     print(response)
 
 def get_download_link(attachment_id):
@@ -167,7 +151,7 @@ def get_download_link(attachment_id):
     'Accept': 'application/json',
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
-    response = requests.get(f'https://brandfolder.com/api/v4/attachments/{attachment_id}',headers=headers).json()
+    response = requests.get(f'{domain}/api/v4/attachments/{attachment_id}',headers=headers).json()
 
     return response["data"]["attributes"]["filename"],response["data"]["attributes"]["url"]
 
@@ -329,10 +313,15 @@ if __name__ == '__main__':
     
     if mode == 'list':
         files_list = []
-        # brandfolder_list = get_list_brandfolder()
-        # for brandfolder in brandfolder_list:
-        data = get_call_list_of_assets(collectionid)
-        files_list.append(process_dict_data(data))
+        if collectionid:
+            collection_id_list = [collectionid]
+        else:
+            collections_list = get_list_of_collections()
+            collection_id_list = [collection_id["id"] for collection_id in collections_list]
+
+        for collection_id in collection_id_list:
+            data = get_call_list_of_assets(collection_id)
+            files_list.append(process_dict_data(data))
         objects_dict = GetObjectDict(files_list)
         if objects_dict and file_path:
             generate_xml_from_file_objects(objects_dict, file_path)
@@ -349,11 +338,15 @@ if __name__ == '__main__':
 
     elif mode == 'browse':
         collection_name = []
-        collections = get_list_of_collection()
+        collections = get_list_of_collections()
         for collection in collections:
-            collection_name.append(collection["attributes"]["name"])
-        xml_output = add_CDATA_tags(collection_name)
+            collection_name.append({"name" : collection["attributes"]["name"],
+                                "id" : collection["id"]
+                                })
+        xml_output = add_CDATA_tags_with_id(collection_name)
         print(xml_output)
+        # generate_xml(file_path,xml_output)
+        # print(f"Generated XML file: {file_path}")
 
     elif mode == "download":
         download_path = os.path.normpath(target_path)
