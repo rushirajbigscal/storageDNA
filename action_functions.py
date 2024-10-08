@@ -4,6 +4,34 @@ import time
 import xml.etree.ElementTree as ET
 import glob
 
+def generate_html(metadata, file_name):
+    if isinstance(metadata, str):
+        metadata = json.loads(metadata)
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        pre {{
+            white-space: pre-wrap;
+        }}
+    </style>
+</head>
+<body>
+    <pre>
+{json.dumps(metadata, indent=4)}
+    </pre>
+</body>
+</html>"""
+
+    with open(file_name, "w") as file:
+        file.write(html_content)
+    
+    return file_name
+
+
 
 def add_CDATA_tags(folders : list):
     xml_output = '<FOLDERLIST>\n'

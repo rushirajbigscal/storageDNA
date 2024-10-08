@@ -73,8 +73,8 @@ def get_call_list_of_assets(collectionid):
         'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
         }
     params = {
-        "fields":"updated_at",
-        "include":"attachments"
+        "fields":"metadata",
+        "include":"attachments",
         }
     response  = requests.get(f'{domain}/api/v4/collections/{collectionid}/assets',headers=headers,params=params).json()
 
@@ -117,10 +117,12 @@ def get_upload_request(file_path):
     }
     response = requests.get(f'{domain}/api/v4/upload_requests',headers=headers).json()
     upload_url = response["upload_url"]
+    object_url = response["object_url"]
+
     with open(file_path, 'rb') as f:
         x = requests.put(upload_url,data=f)
         print(x.text)
-    return upload_url
+    return object_url
 
 def create_asset_call(collection_id,upload_url,file_path):
     headers = {
@@ -131,7 +133,6 @@ def create_asset_call(collection_id,upload_url,file_path):
         "data": {
             "attributes": [
             {
-                # "name": file_path.split("\\")[-1],
                 "attachments": [
                 {
                     "url": upload_url,
@@ -141,7 +142,7 @@ def create_asset_call(collection_id,upload_url,file_path):
             }
             ]
         },
-        "section_key": "28w9gmqhhbx33bwn5nnpqrkw"
+        "section_key": "jknv4r2nk5jwwmqjp2vkcnz"
         }
     response = requests.post(f'{domain}/api/v4/collections/{collection_id}/assets',headers=headers,json=body).json()
     print(response)
@@ -155,6 +156,27 @@ def get_download_link(attachment_id):
 
     return response["data"]["attributes"]["filename"],response["data"]["attributes"]["url"]
 
+def get_attachment_metadata(attachment_id):
+    headers = {
+    'Accept': 'application/json',
+    'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
+    }
+    params = {
+    "fields":"metadata"
+            }
+    response = requests.get(f'{domain}/api/v4/attachments/{attachment_id}',headers=headers,params=params).json()
+
+    return response["data"]["attributes"]["metadata"]
+
+
+def get_list_of_sections(collection_id):
+    headers = {
+    'Accept': 'application/json',
+    'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
+    }
+    response = requests.get(f'{domain}/api/v4/collections/{collection_id}/sections',headers=headers).json()
+
+    return response["data"]
 
 def process_dict_data(data):
     dict_list = []
@@ -199,11 +221,20 @@ def GetObjectDict(files_list : list):
     '''
     for file_data in files_list:
         for data in file_data:
-            mtime_struct = datetime.strptime(data["asset_data"]["updated_at"].split(".")[0], "%Y-%m-%dT%H:%M:%S") 
-            # atime_struct = datetime.strptime(file['date_created'].split(".")[0], "%Y-%m-%dT%H:%M:%S")
+            attachment_id = data["file"]["file_id"]
+            attachment_metadata = get_attachment_metadata(attachment_id)
+            asset_metadata = data["asset_data"]["metadata"]
+            mtime_struct = datetime.strptime(attachment_metadata["file_modify_date"].split("+")[0], "%Y:%m:%d %H:%M:%S") 
+            atime_struct = datetime.strptime(attachment_metadata['file_access_date'].split("+")[0], "%Y:%m:%d %H:%M:%S")
             mtime_epoch_seconds = int(mtime_struct.timestamp())
-            # atime_epoch_seconds = int(atime_struct.timestamp())
-            
+            atime_epoch_seconds = int(atime_struct.timestamp())
+            file_mode = symbolic_to_hex(attachment_metadata["file_permissions"])
+
+            asset_metadata_file_name = f"C:\\temp\\asset_{data["asset_id"]}.html"
+            file_metadata_file_name = f"C:\\temp\\file_{attachment_id}.html"
+            asset_html = generate_html(asset_metadata,asset_metadata_file_name)
+            file_html = generate_html(attachment_metadata,file_metadata_file_name)
+           
             '''
             if is_dir or filter_type == 'none':
                 include_file = True
@@ -234,11 +265,11 @@ def GetObjectDict(files_list : list):
             if include_file == True:
                 file_object["name"] = data["asset_data"]["name"] +"/"+ data["file"]["file_data"]["filename"]
                 file_object["size"] = data["file"]["file_data"]["size"]
-                file_object["mode"] = "0"
-                file_object["tmpid"] = f"{data["asset_id"]}|{data["file"]["file_id"]}"
+                file_object["mode"] = file_mode
+                file_object["tmpid"] = f"{data["asset_id"]}|{attachment_id}"
                 file_object["type"] = "F_REG"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
-                file_object["atime"] = f'{mtime_epoch_seconds}'
+                file_object["atime"] = f'{atime_epoch_seconds}'
                 file_object["owner"] = "0"
                 file_object["group"] = "0"
                 file_object["index"] = "0"
@@ -338,7 +369,10 @@ if __name__ == '__main__':
 
     elif mode == 'browse':
         collection_name = []
-        collections = get_list_of_collections()
+        if collectionid:
+            collections = get_list_of_sections(collectionid)
+        else:
+            collections = get_list_of_collections()
         for collection in collections:
             collection_name.append({"name" : collection["attributes"]["name"],
                                 "id" : collection["id"]
@@ -351,7 +385,7 @@ if __name__ == '__main__':
     elif mode == "download":
         download_path = os.path.normpath(target_path)
         tmp_id_list = tmp_id.split("|")
-        attachment_id = tmp_id_list[-1]
+        attachment_id = tmp_id_list[1]
         file_name ,url = get_download_link(attachment_id)
 
         response = requests.get(url)
