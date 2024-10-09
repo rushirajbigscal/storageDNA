@@ -1,14 +1,13 @@
 import requests
 import argparse
 from action_functions import *
-from urllib import request
 import urllib3
 from datetime import datetime
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-VALID_MODES = ['upload', 'download', 'list']
+domain = "https://brandfolder.com"
 
 linux_dir = "/opt/sdna/bin"
 is_linux = 0
@@ -29,7 +28,7 @@ def get_list_brandfolder():
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
 
-    # response  = requests.get('https://brandfolder.com/api/v4/brandfolders', headers=headers).json()
+    # response  = requests.get(f'{domain}/api/v4/brandfolders', headers=headers).json()
     response  = {
             "data": [
                 {
@@ -68,129 +67,46 @@ def get_list_brandfolder():
     return [x["id"] for x in data]
 '''
 
-def get_call_list_of_assets(brandfolder_id):
+def get_call_list_of_assets(collectionid):
     headers = {
         'Accept': 'application/json',
         'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
         }
     params = {
-        "fields":"updated_at",
-        "include":"attachments"
+        "fields":"metadata",
+        "include":"attachments",
         }
-    # response  = requests.get(f'https://brandfolder.com/api/v4/brandfolders/{brandfolder_id}/assets',headers=headers,params=params).json()
-    response  = {
-            "data": [
-            {
-                "id": "oqgkkd-fr5iv4-443db",
-                "type": "generic_files",
-                "attributes": {
-                "name": "Brandfolder Logo",
-                "description": "Brandfolder's logo in print ready form",
-                "thumbnail_url": "https://example.com/thumbnail1/example1.jpeg?Expires=1624742369",
-                "approved": "true",
-                "updated_at": "2018-09-11T20:31:34.858Z"
-                },
-                "relationships": {
-                "attachments": {
-                    "data": [
-                    {
-                        "id": "pewron-9f9uaw-2em6u7",
-                        "type": "attachments"
-                    }
-                    ]
-                }
-                }
-            },
-            {
-                "id": "oqh4xl-ci1u7c-emfa7g",
-                "type": "generic_files",
-                "attributes": {
-                "name": "Facebook Banner - Large",
-                "description": "Brandfolder banner optimized for Facebook",
-                "thumbnail_url": "https://example.com/thumbnail137/example.jpeg?Expires=1624742369",
-                "approved": "false",
-                "updated_at": "2018-09-11T20:31:34.858Z"
-                },
-                "relationships": {
-                "attachments": {
-                    "data": [
-                    {
-                        "id": "pewron-e23is0-2x6fbq",
-                        "type": "attachments"
-                    }
-                    ]
-                }
-                }
-            }
-            ],
-            "included": [
-            {
-                "id": "pewron-9f9uaw-2em6u7",
-                "type": "attachments",
-                "attributes": {
-                "mimetype": "image/png",
-                "filename": "1example.png",
-                "size": 1603,
-                "width": 126,
-                "height": 75,
-                "url": "https://example.com/pewron-9f9uaw-2em6u7/original/1example.png",
-                "position": 0
-                }
-            },
-            {
-                "id": "pewron-e23is0-2x6fbq",
-                "type": "attachments",
-                "attributes": {
-                "mimetype": "image/png",
-                "filename": "137example.png",
-                "size": 1539,
-                "width": 134,
-                "height": 187,
-                "url": "https://example.com/pewron-e23is0-2x6fbq/original/137example.png",
-                "position": 0
-                }
-            }
-            ],
-            "meta": {
-            "total_count": 2
-            }
+    response  = requests.get(f'{domain}/api/v4/collections/{collectionid}/assets',headers=headers,params=params).json()
+
+    return response["data"] 
+
+def get_call_list_of_files(collectionid):
+    headers = {
+        'Accept': 'application/json',
+        'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
         }
+    params = {
+        "fields":"metadata"
+        }
+    response  = requests.get(f'{domain}/api/v4/collections/{collectionid}/attachments',headers=headers,params=params).json()
 
-    return response 
+    return response["data"]
 
+def assets_info(asset_id):
+    headers = {
+    'Accept': 'application/json',
+    'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
+    }
+    response  = requests.get(f'{domain}/api/v4/assets{asset_id}',headers=headers)
+    return response.status_code
 
-def get_list_of_collection(brandfolder_id):
+def get_list_of_collections():
     headers = {
         'Accept': 'application/json',
         'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
         }
 
-    # response  = requests.get(f'https://brandfolder.com/api/v4/brandfolders/{brandfolder_id}/collections',headers=headers).json()
-    response = {"data": [
-                    {
-                    "id": "oqgkkd-fr5iv4-hh142d",
-                    "type": "collections",
-                    "attributes": {
-                        "name": "Brandfolder - Print Ready",
-                        "slug": "print-ready",
-                        "tagline": "All Brandfolder's assets that are ready for print",
-                        "public": "true",
-                        "stealth": "false"
-                    }
-                    },
-                    {
-                    "id": "oqgkkd-fr5iv",
-                    "type": "collections",
-                    "attributes": {
-                        "name": "Brandfolder",
-                        "slug": "print-ready",
-                        "tagline": "All Brandfolder's assets that are ready for print",
-                        "public": "true",
-                        "stealth": "false"
-                    }
-                    }
-                ]
-                }
+    response  = requests.get(f'{domain}/api/v4/collections',headers=headers).json()
 
     return response["data"]
 
@@ -208,88 +124,97 @@ def create_collection(brandfolder_id,collection_name):
         }
         }
 
-
-    # response = requests.post(f'https://brandfolder.com/api/v4/brandfolders/{brandfolder_id}/collections', json=data,headers=headers)
-    response = {
-            "data": {
-                "id": "oqgkkd-fr5iv4-hh142d",
-                "type": "collections",
-                "attributes": {
-                "name": "Brandfolder - Print Ready",
-                "slug": "print-ready",
-                "tagline": "All Brandfolder's assets that are ready for print",
-                "public": "true",
-                "stealth": "false"
-                }
-            }
-            }
-
+    response = requests.post(f'{domain}/api/v4/brandfolders/{brandfolder_id}/collections', json=data,headers=headers)
     return response["data"]["id"]
 
 
 def get_upload_request(file_path):
     headers = {
-    'Accept': 'application/json',
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
-    response = requests.get(f'https://brandfolder.com/api/v4/upload_requests',headers=headers).json()
+    response = requests.get(f'{domain}/api/v4/upload_requests',headers=headers).json()
     upload_url = response["upload_url"]
+    object_url = response["object_url"]
+
     with open(file_path, 'rb') as f:
         x = requests.put(upload_url,data=f)
         print(x.text)
+    return object_url
 
-def create_asset_call(brandfolder_id):
+def create_asset_call(collection_id,upload_url,file_path,section_key):
     headers = {
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
-    response = requests.get(f'https://brandfolder.com/api/v4/brandfolders/{brandfolder_id}/assets',headers=headers).json()
-
+    file_path = os.path.normpath(file_path)
+    body = {
+        "data": {
+            "attributes": [
+            {
+                "attachments": [
+                {
+                    "url": upload_url,
+                    "filename": file_path.split("\\")[-1]
+                }
+                ]
+            }
+            ]
+        },
+        "section_key": section_key
+        }
+    response = requests.post(f'{domain}/api/v4/collections/{collection_id}/assets',headers=headers,json=body)
+    return response.status_code
 
 def get_download_link(attachment_id):
     headers = {
     'Accept': 'application/json',
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
-    # response = requests.get(f'https://brandfolder.com/api/v4/attachments/{attachment_id}',headers=headers).json()
-
-    response = {
-            "data": {
-                "id": "oqgkkd-fr3j84-33j7db",
-                "type": "attachments",
-                "attributes": {
-                "filename": "brandfolder_logo.png",
-                "mimetype": "image/png",
-                "url": "https://example.com/brandfolder_logo.png?expiry=1625260667",
-                "size": 123456,
-                "width": 1920,
-                "height": 1080,
-                "position": 0
-                }
-            }
-        }
+    response = requests.get(f'{domain}/api/v4/attachments/{attachment_id}',headers=headers).json()
 
     return response["data"]["attributes"]["filename"],response["data"]["attributes"]["url"]
 
+def get_attachment_metadata(attachment_id):
+    headers = {
+    'Accept': 'application/json',
+    'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
+    }
+    params = {
+    "fields":"metadata"
+            }
+    response = requests.get(f'{domain}/api/v4/attachments/{attachment_id}',headers=headers,params=params).json()
 
-def process_dict_data(data):
+    return response["data"]["attributes"]["metadata"]
+
+
+def get_list_of_sections(collection_id):
+    headers = {
+    'Accept': 'application/json',
+    'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
+    }
+    response = requests.get(f'{domain}/api/v4/collections/{collection_id}/sections',headers=headers).json()
+
+    return response["data"]
+
+def process_dict_data(asset_data,file_data):
     dict_list = []
     processed_data_list = []
 
-    for attchment_data in data["included"]:
+    for attchment_data in file_data:
         dict = {}
         dict["file_id"] = attchment_data["id"]
         dict["file_data"] = attchment_data["attributes"]
         dict_list.append(dict)
 
-    for asset_data in data["data"]:
+    for assets in asset_data:
         for dict in dict_list:
-            if dict["file_id"] == asset_data["relationships"]["attachments"]["data"][0]["id"]:
-                processed_data_dict = {}
-                processed_data_dict["file"] = dict
-                processed_data_dict["asset_id"] = asset_data["id"]
-                processed_data_dict["asset_data"] = asset_data["attributes"]
-                processed_data_list.append(processed_data_dict)
-        
+            for attachment in assets["relationships"]["attachments"]["data"]:
+                if dict["file_id"] == attachment["id"]:
+                    processed_data_dict = {}
+                    processed_data_dict["file"] = dict
+                    processed_data_dict["asset_id"] = assets["id"]
+                    processed_data_dict["asset_data"] = assets["attributes"]
+                    processed_data_list.append(processed_data_dict)
+
     return processed_data_list
 
 
@@ -313,11 +238,20 @@ def GetObjectDict(files_list : list):
     '''
     for file_data in files_list:
         for data in file_data:
-            mtime_struct = datetime.strptime(data["asset_data"]["updated_at"].split(".")[0], "%Y-%m-%dT%H:%M:%S") 
-            # atime_struct = datetime.strptime(file['date_created'].split(".")[0], "%Y-%m-%dT%H:%M:%S")
+            attachment_id = data["file"]["file_id"]
+            attachment_metadata = data["file"]["file_data"]["metadata"]
+            asset_metadata = data["asset_data"]["metadata"]
+            mtime_struct = datetime.strptime(attachment_metadata["file_modify_date"].split("+")[0], "%Y:%m:%d %H:%M:%S") 
+            atime_struct = datetime.strptime(attachment_metadata['file_access_date'].split("+")[0], "%Y:%m:%d %H:%M:%S")
             mtime_epoch_seconds = int(mtime_struct.timestamp())
-            # atime_epoch_seconds = int(atime_struct.timestamp())
-            
+            atime_epoch_seconds = int(atime_struct.timestamp())
+            file_mode = symbolic_to_hex(attachment_metadata["file_permissions"])
+
+            asset_metadata_file_name = f"C:\\temp\\asset_{data["asset_id"]}.html"
+            attachment_metadata_file_name = f"C:\\temp\\file_{attachment_id}.html"
+            asset_html = generate_html(asset_metadata,asset_metadata_file_name)
+            file_html = generate_html(attachment_metadata,attachment_metadata_file_name)
+           
             '''
             if is_dir or filter_type == 'none':
                 include_file = True
@@ -348,11 +282,12 @@ def GetObjectDict(files_list : list):
             if include_file == True:
                 file_object["name"] = data["asset_data"]["name"] +"/"+ data["file"]["file_data"]["filename"]
                 file_object["size"] = data["file"]["file_data"]["size"]
-                file_object["mode"] = "0"
-                file_object["tmpid"] = f"{data["asset_id"]}|{data["file"]["file_id"]}"
+                file_object["mode"] = file_mode
+                file_object["url"] = f"{asset_html}|{file_html}"
+                file_object["tmpid"] = f"{data["asset_id"]}|{attachment_id}"
                 file_object["type"] = "F_REG"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
-                file_object["atime"] = f'{mtime_epoch_seconds}'
+                file_object["atime"] = f'{atime_epoch_seconds}'
                 file_object["owner"] = "0"
                 file_object["group"] = "0"
                 file_object["index"] = "0"
@@ -377,9 +312,11 @@ if __name__ == '__main__':
     parser.add_argument('-s','--source',help='source file')
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-f','--foldername',help='folder_name_to_create')
-    parser.add_argument('-bid','--brandfolder_id',help='brandfolder_id')
+    # parser.add_argument('-bid','--brandfolder_id',help='brandfolder_id')
     parser.add_argument('-id','--collection_id',help='collection_id')
     parser.add_argument('-tmp','--tmp_id',help='tmp_id')
+    parser.add_argument('-sid','--section_id',help='section_id')
+
 
 
 
@@ -388,10 +325,10 @@ if __name__ == '__main__':
     file_path = args.source
     target_path = args.target
     folder_name = args.foldername
-    brandfolder_id = args.brandfolder_id
+    # brandfolder_id = args.brandfolder_id
     collectionid = args.collection_id
     tmp_id = args.tmp_id
-
+    section_id = args.section_id
     '''
     config_name = args.configname
     
@@ -422,15 +359,21 @@ if __name__ == '__main__':
     '''
 
     cloud_config_info = {
-                    "Bearer_key" : "Bearer_key"
+                    "Bearer_key" : "eyJhbGciOiJIUzI1NiJ9.eyJvcmdhbml6YXRpb25fa2V5IjoicGcyeW13LTN1cnpway01d2dzczUiLCJpYXQiOjE3MjgwMjY0MzcsInVzZXJfa2V5IjoiOTMzdG5uY3I2Yng2NDZ4cGNjdDM3cHoiLCJzdXBlcnVzZXIiOmZhbHNlfQ.9PVGOlORzpoMofvkJA9Vffy027QgScNavVAFVvZGedE"
                 }
     
     if mode == 'list':
         files_list = []
-        # brandfolder_list = get_list_brandfolder()
-        # for brandfolder in brandfolder_list:
-        data = get_call_list_of_assets(brandfolder_id)
-        files_list.append(process_dict_data(data))
+        if collectionid:
+            collection_id_list = [collectionid]
+        else:
+            collections_list = get_list_of_collections()
+            collection_id_list = [collection_id["id"] for collection_id in collections_list]
+
+        for collection_id in collection_id_list:
+            asset_data = get_call_list_of_assets(collection_id)
+            file_data = get_call_list_of_files(collection_id)
+            files_list.append(process_dict_data(asset_data,file_data))
         objects_dict = GetObjectDict(files_list)
         if objects_dict and file_path:
             generate_xml_from_file_objects(objects_dict, file_path)
@@ -441,35 +384,45 @@ if __name__ == '__main__':
         print ("GOOD")
 
     elif mode == 'upload':
-        pass
-        
+        upload_url = get_upload_request(file_path)
+        print(collectionid,upload_url,file_path,section_id)
+        response_code = create_asset_call(collectionid,upload_url,file_path,section_id)
+        if response_code == 200:
+            print("File Upload succesfull:",file_path)
+        else:
+            print("Error uploding File or File already in collection:",response_code)
+
     elif mode == 'browse':
         collection_name = []
-        collections = get_list_of_collection(brandfolder_id)
+        if collectionid:
+            collections = get_list_of_sections(collectionid)
+        else:
+            collections = get_list_of_collections()
         for collection in collections:
-            collection_name.append(collection["attributes"]["name"])
-        xml_output = add_CDATA_tags(collection_name)
+            collection_name.append({"name" : collection["attributes"]["name"],
+                                "id" : collection["id"]
+                                })
+        xml_output = add_CDATA_tags_with_id(collection_name)
         print(xml_output)
+        # generate_xml(file_path,xml_output)
+        # print(f"Generated XML file: {file_path}")
 
     elif mode == "download":
         download_path = os.path.normpath(target_path)
         tmp_id_list = tmp_id.split("|")
-        attachment_id = tmp_id_list[-1]
+        attachment_id = tmp_id_list[1]
         file_name ,url = get_download_link(attachment_id)
-        print(url)
-        print(file_name)
-        # response = requests.get(url)
-        # if response.status_code == 200:
-        #     os.makedirs(download_path, exist_ok=True)
-        #     download_path = os.path.join(download_path, file_name)
-        #     with open(download_path, 'wb') as file:
-        #         file.write(response.content)
+
+        response = requests.get(url)
+        if response.status_code == 200:
+            os.makedirs(download_path, exist_ok=True)
+            download_path = os.path.join(download_path, file_name)
+            with open(download_path, 'wb') as file:
+                file.write(response.content)
         print(f"File download at {download_path}")
 
-
-
-    elif mode == "createfolder":
-        collection_id = create_collection(brandfolder_id,folder_name)
-        print(collection_id)
+    # elif mode == "createfolder":
+    #     collection_id = create_collection(brandfolder_id,folder_name)
+    #     print(collection_id)
 
 

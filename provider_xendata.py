@@ -30,15 +30,16 @@ def GetRequestStatus(cloudConfigDetails, requestId):
     url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/xen/export/{requestId}"
     headers = { 'Content-Type': 'application/json; charset=utf-8'}
     print (f'In GetRequestStatus - URL = {url}, headers = {headers}')
-    resp_JSON = requests.get(url, headers=headers, verify=False,timeout=3600).json()
+    resp_JSON = requests.get(url, headers=headers, verify=False).json()
     return resp_JSON
 
 
-def GetAllObjects(cloudConfigDetails,path,recursive=None):
+def GetAllObjects(cloudConfigDetails,path,filter,recursive=None):
     url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/xen/export"
     params = {
             'path': path,
-            'recursive': recursive
+            'recursive': recursive,
+            'filter' : filter
             }
     
     print (f'In GetAllObjects - URL = {url}, params = {params}')
@@ -128,13 +129,13 @@ if __name__ == '__main__':
     
     parser.add_argument('-m', '--mode', required = True, help = 'upload, download, list,browse')
     parser.add_argument('-x','--xml_filename',required=False,help='xml_filename')
-    # parser.add_argument('-f','--filter',required=False,help='Filter in reg expresion')
+    parser.add_argument('-f','--filter',required=False,help='Filter in reg expresion')
     parser.add_argument('-p', '--path', required=False, default='V:\\', help="Path of storage disk (default: V:\\)")
     
     args = parser.parse_args()
     
     mode = args.mode
-    # filter = args.filter
+    filter = args.filter
     path = args.path
     xml_filename = args.xml_filename
 
@@ -172,7 +173,7 @@ if __name__ == '__main__':
     
 
     if mode == 'list':
-        all_objs_list = GetAllObjects(cloud_config_info,path,recursive='true')
+        all_objs_list = GetAllObjects(cloud_config_info,path,filter,recursive='true')
         print(all_objs_list)
         if not all_objs_list['requestId']:
             exit(-1)
@@ -186,8 +187,11 @@ if __name__ == '__main__':
             time.sleep(5)
 
         objects_dict = GetObjectDict(listing_json_responce)
-        generate_xml_from_file_objects(objects_dict, xml_filename)
-        print(f"Generated XML file: {xml_filename}")
+        if objects_dict and xml_filename:
+            generate_xml_from_file_objects(objects_dict, xml_filename)
+            print(f"Generated XML file: {xml_filename}")
+        else:
+            print("Failed to generate XML file.")
         #os.remove(directory)
         print ("GOOD")
 

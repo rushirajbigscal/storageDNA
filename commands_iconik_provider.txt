@@ -1,5 +1,11 @@
 ================ List_Call ======================
 
+--------------- With collection_id list call at particular collection --------------
+
+python provider_iconic.py -m list -s test.xml --collection_id 274fa3dc-5969-11ef-b299-6abee23a3d15
+
+--------------- Without collection_id lista call at root level --------------
+
 python provider_iconic.py -m list -s test.xml
 
 =============== Upload_Call ======================
