@@ -78,8 +78,27 @@ def get_call_list_of_assets(collectionid):
         }
     response  = requests.get(f'{domain}/api/v4/collections/{collectionid}/assets',headers=headers,params=params).json()
 
-    return response 
+    return response["data"] 
 
+def get_call_list_of_files(collectionid):
+    headers = {
+        'Accept': 'application/json',
+        'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
+        }
+    params = {
+        "fields":"metadata"
+        }
+    response  = requests.get(f'{domain}/api/v4/collections/{collectionid}/attachments',headers=headers,params=params).json()
+
+    return response["data"]
+
+def assets_info(asset_id):
+    headers = {
+    'Accept': 'application/json',
+    'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
+    }
+    response  = requests.get(f'{domain}/api/v4/assets{asset_id}',headers=headers)
+    return response.status_code
 
 def get_list_of_collections():
     headers = {
@@ -105,14 +124,12 @@ def create_collection(brandfolder_id,collection_name):
         }
         }
 
-
     response = requests.post(f'{domain}/api/v4/brandfolders/{brandfolder_id}/collections', json=data,headers=headers)
     return response["data"]["id"]
 
 
 def get_upload_request(file_path):
     headers = {
-    'Accept': 'application/json',
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
     response = requests.get(f'{domain}/api/v4/upload_requests',headers=headers).json()
@@ -124,7 +141,7 @@ def get_upload_request(file_path):
         print(x.text)
     return object_url
 
-def create_asset_call(collection_id,upload_url,file_path):
+def create_asset_call(collection_id,upload_url,file_path,section_key):
     headers = {
     'Authorization': f'Bearer {cloud_config_info["Bearer_key"]}'
     }
@@ -142,10 +159,10 @@ def create_asset_call(collection_id,upload_url,file_path):
             }
             ]
         },
-        "section_key": "jknv4r2nk5jwwmqjp2vkcnz"
+        "section_key": section_key
         }
-    response = requests.post(f'{domain}/api/v4/collections/{collection_id}/assets',headers=headers,json=body).json()
-    print(response)
+    response = requests.post(f'{domain}/api/v4/collections/{collection_id}/assets',headers=headers,json=body)
+    return response.status_code
 
 def get_download_link(attachment_id):
     headers = {
@@ -178,26 +195,26 @@ def get_list_of_sections(collection_id):
 
     return response["data"]
 
-def process_dict_data(data):
+def process_dict_data(asset_data,file_data):
     dict_list = []
     processed_data_list = []
 
-    for attchment_data in data["included"]:
+    for attchment_data in file_data:
         dict = {}
         dict["file_id"] = attchment_data["id"]
         dict["file_data"] = attchment_data["attributes"]
         dict_list.append(dict)
 
-    for asset_data in data["data"]:
+    for assets in asset_data:
         for dict in dict_list:
-            for attachment in asset_data["relationships"]["attachments"]["data"]:
+            for attachment in assets["relationships"]["attachments"]["data"]:
                 if dict["file_id"] == attachment["id"]:
                     processed_data_dict = {}
                     processed_data_dict["file"] = dict
-                    processed_data_dict["asset_id"] = asset_data["id"]
-                    processed_data_dict["asset_data"] = asset_data["attributes"]
+                    processed_data_dict["asset_id"] = assets["id"]
+                    processed_data_dict["asset_data"] = assets["attributes"]
                     processed_data_list.append(processed_data_dict)
-        
+
     return processed_data_list
 
 
@@ -222,7 +239,7 @@ def GetObjectDict(files_list : list):
     for file_data in files_list:
         for data in file_data:
             attachment_id = data["file"]["file_id"]
-            attachment_metadata = get_attachment_metadata(attachment_id)
+            attachment_metadata = data["file"]["file_data"]["metadata"]
             asset_metadata = data["asset_data"]["metadata"]
             mtime_struct = datetime.strptime(attachment_metadata["file_modify_date"].split("+")[0], "%Y:%m:%d %H:%M:%S") 
             atime_struct = datetime.strptime(attachment_metadata['file_access_date'].split("+")[0], "%Y:%m:%d %H:%M:%S")
@@ -231,9 +248,9 @@ def GetObjectDict(files_list : list):
             file_mode = symbolic_to_hex(attachment_metadata["file_permissions"])
 
             asset_metadata_file_name = f"C:\\temp\\asset_{data["asset_id"]}.html"
-            file_metadata_file_name = f"C:\\temp\\file_{attachment_id}.html"
+            attachment_metadata_file_name = f"C:\\temp\\file_{attachment_id}.html"
             asset_html = generate_html(asset_metadata,asset_metadata_file_name)
-            file_html = generate_html(attachment_metadata,file_metadata_file_name)
+            file_html = generate_html(attachment_metadata,attachment_metadata_file_name)
            
             '''
             if is_dir or filter_type == 'none':
@@ -266,6 +283,7 @@ def GetObjectDict(files_list : list):
                 file_object["name"] = data["asset_data"]["name"] +"/"+ data["file"]["file_data"]["filename"]
                 file_object["size"] = data["file"]["file_data"]["size"]
                 file_object["mode"] = file_mode
+                file_object["url"] = f"{asset_html}|{file_html}"
                 file_object["tmpid"] = f"{data["asset_id"]}|{attachment_id}"
                 file_object["type"] = "F_REG"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
@@ -297,6 +315,8 @@ if __name__ == '__main__':
     # parser.add_argument('-bid','--brandfolder_id',help='brandfolder_id')
     parser.add_argument('-id','--collection_id',help='collection_id')
     parser.add_argument('-tmp','--tmp_id',help='tmp_id')
+    parser.add_argument('-sid','--section_id',help='section_id')
+
 
 
 
@@ -308,7 +328,7 @@ if __name__ == '__main__':
     # brandfolder_id = args.brandfolder_id
     collectionid = args.collection_id
     tmp_id = args.tmp_id
-
+    section_id = args.section_id
     '''
     config_name = args.configname
     
@@ -351,8 +371,9 @@ if __name__ == '__main__':
             collection_id_list = [collection_id["id"] for collection_id in collections_list]
 
         for collection_id in collection_id_list:
-            data = get_call_list_of_assets(collection_id)
-            files_list.append(process_dict_data(data))
+            asset_data = get_call_list_of_assets(collection_id)
+            file_data = get_call_list_of_files(collection_id)
+            files_list.append(process_dict_data(asset_data,file_data))
         objects_dict = GetObjectDict(files_list)
         if objects_dict and file_path:
             generate_xml_from_file_objects(objects_dict, file_path)
@@ -364,8 +385,12 @@ if __name__ == '__main__':
 
     elif mode == 'upload':
         upload_url = get_upload_request(file_path)
-        create_asset_call(collectionid,upload_url,file_path)
-        print("File Upload succesfull:",file_path)
+        print(collectionid,upload_url,file_path,section_id)
+        response_code = create_asset_call(collectionid,upload_url,file_path,section_id)
+        if response_code == 200:
+            print("File Upload succesfull:",file_path)
+        else:
+            print("Error uploding File or File already in collection:",response_code)
 
     elif mode == 'browse':
         collection_name = []
