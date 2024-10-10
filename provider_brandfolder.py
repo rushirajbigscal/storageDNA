@@ -247,8 +247,8 @@ def GetObjectDict(files_list : list):
             atime_epoch_seconds = int(atime_struct.timestamp())
             file_mode = symbolic_to_hex(attachment_metadata["file_permissions"])
 
-            asset_metadata_file_name = f"C:\\temp\\asset_{data["asset_id"]}.html"
-            attachment_metadata_file_name = f"C:\\temp\\file_{attachment_id}.html"
+            asset_metadata_file_name = f"C:/temp/asset_{data["asset_id"]}.html"
+            attachment_metadata_file_name = f"C:/temp/file_{attachment_id}.html"
             asset_html = generate_html(asset_metadata,asset_metadata_file_name)
             file_html = generate_html(attachment_metadata,attachment_metadata_file_name)
            
@@ -385,12 +385,14 @@ if __name__ == '__main__':
 
     elif mode == 'upload':
         upload_url = get_upload_request(file_path)
-        print(collectionid,upload_url,file_path,section_id)
-        response_code = create_asset_call(collectionid,upload_url,file_path,section_id)
-        if response_code == 200:
-            print("File Upload succesfull:",file_path)
+        if collectionid and upload_url and file_path and section_id:
+            response_code = create_asset_call(collectionid,upload_url,file_path,section_id)
+            if response_code == 200:
+                print("File Upload succesfull:",file_path)
+            else:
+                print("Error uploding File or File already in collection:",response_code)
         else:
-            print("Error uploding File or File already in collection:",response_code)
+            print("All collectionid,upload_url,file_path,section_id is required")
 
     elif mode == 'browse':
         collection_name = []
