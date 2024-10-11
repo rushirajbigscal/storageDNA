@@ -414,14 +414,15 @@ if __name__ == '__main__':
         tmp_id_list = tmp_id.split("|")
         attachment_id = tmp_id_list[1]
         file_name ,url = get_download_link(attachment_id)
-
         response = requests.get(url)
         if response.status_code == 200:
             os.makedirs(download_path, exist_ok=True)
             download_path = os.path.join(download_path, file_name)
             with open(download_path, 'wb') as file:
                 file.write(response.content)
-        print(f"File download at {download_path}")
+            print(f"File download at {download_path}")
+        else:
+            print(f"Error while downloding File:{file_name}")
 
     # elif mode == "createfolder":
     #     collection_id = create_collection(brandfolder_id,folder_name)
