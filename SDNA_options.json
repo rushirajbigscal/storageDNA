@@ -1,0 +1,79 @@
+{
+    "csv_file": {
+        "argument": "--csv_file",
+        "type": "string",
+        "description": "CSV file path",
+        "optional": false,
+        "example": "/path/to/your/file.csv"
+    },
+    "action": {
+        "argument": "--action",
+        "type": "string",
+        "description": "Action the user wants to perform (e.g., 'delete', 'move', 'copy').",
+        "choices": [
+            "delete",
+            "move",
+            "copy"
+        ],
+        "optional": false,
+        "example": "delete"
+    },
+    "dry_run": {
+        "argument": "--dry_run",
+        "type": "boolean",
+        "description": "If true, shows how many items will be affected without making any changes.",
+        "optional": true,
+        "example": true
+    },
+    "filename_filter": {
+        "argument": "--filename_filter",
+        "type": "string",
+        "description": "Wildcard pattern for matching filenames.",
+        "optional": true,
+        "example": "*.???"
+    },
+    "filepath_filter": {
+        "argument": "--filepath_filter",
+        "type": "string",
+        "description": "Wildcard pattern for matching file paths.",
+        "optional": true,
+        "example": "*/m?t/*"
+    },
+    "filesize": {
+        "argument": "--filesize",
+        "type": "integer",
+        "description": "File size filter in bytes.",
+        "optional": true,
+        "example": 1024
+    },
+    "filesize_filter": {
+        "argument": "--filesize_filter",
+        "type": "string",
+        "description": "Required if filesize is provided. One of ['greater', 'less', 'equal'] for file size comparison.",
+        "choices": [
+            "greater",
+            "less",
+            "equal"
+        ],
+        "optional": true,
+        "example": "greater"
+    },
+    "date": {
+        "argument": "--date",
+        "type": "string",
+        "description": "Optional date filter in 'YYYY-MM-DD' format.",
+        "optional": true,
+        "example": "2024-09-23"
+    },
+    "date_filter": {
+        "argument": "--date_filter",
+        "type": "string",
+        "description": "Required if date is provided. One of ['before', 'after'] for filtering based on date.",
+        "choices": [
+            "before",
+            "after"
+        ],
+        "optional": true,
+        "example": "before"
+    }
+}
