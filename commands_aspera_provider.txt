@@ -1,10 +1,10 @@
 =============== Browse_Call ======================
 
-python provider_aspera.py -m browse -w "StorageDNA - Test"
+python provider_aspera.py -w "StorageDNA - Test" -m browse -s /DRUM_SAMPLES
 
 ================ List_Call ======================
 
-python provider_aspera.py -m list -w "StorageDNA - Test" -s test.xml
+ python provider_aspera.py -m list -w "StorageDNA - Test"  -s /DRUM_SAMPLE -t /tmp/gen.xml
 
 =============== Upload_Call ======================
 
