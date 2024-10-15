@@ -128,10 +128,6 @@ def process_files(args):
                 file_path = file_path[1:]
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            if not os.path.exists(file_path):
-                error_msg = f"File not found: {file_path}"
-                print(error_msg)
-
             if action == 'delete':
                 if dry_run:
                     print(f"Dry Run this file will be deleted: {file_path}")
