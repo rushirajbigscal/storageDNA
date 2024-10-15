@@ -7,6 +7,7 @@ import fnmatch
 import time
 import dateutil.parser as dateparser
 from datetime import datetime
+from action_functions import *
 
 def open_csv_file(given_filename):
     file_given = open(given_filename,"w")
@@ -67,32 +68,34 @@ def serialize_datetime(obj):
         return f'{obj.isoformat()}.000Z'
 
 def process_files(args):
-    run_date = args.rundate
+    sdna_options = load_jsonfile(args.sdna_options)
+    sdna_default = load_jsonfile(args.sdna_default)
+
+    run_date = sdna_default["rundate"]
     json_data = json.dumps(dateparser.parse(run_date), default=serialize_datetime)
     runDate = json_data.strip('\"')
-    with open(args.optionsfilepath, 'r') as f:
-        data = json.load(f)
 
-    action = data["action"]
-    destination_folder = data["destination_folder"]
-    dry_run = data["dry_run"]
-    filename_filter = data["filename_filter"]
-    filepath_filter = data["filepath_filter"]
-    filesize_filter = data["filesize_filter"]
-    filesize = data["filesize"]
+    csv_file = sdna_options["csv_file"]
+    action = sdna_options["action"]
+    destination_folder = sdna_options["destination_folder"]
+    dry_run = sdna_options["dry_run"]
+    filename_filter = sdna_options["filename_filter"]
+    filepath_filter = sdna_options["filepath_filter"]
+    filesize_filter = sdna_options["filesize_filter"]
+    filesize = sdna_options["filesize"]
 
     totals = {}
     totals["duration"] = int(time.time())
-    totals["run_id"] = args.runguid
-    totals["job_id"] = args.jobid
-    totals["progress_path"] = args.progresspath
+    totals["run_id"] = sdna_default["runguid"]
+    totals["job_id"] = sdna_default["jobguid"]
+    totals["progress_path"] = sdna_default["progresspath"]
     totals["processedBytes"] = 0
     totals["processedFiles"] = 0
-    file_given = open_csv_file(args.csvfilepath)
+    file_given = open_csv_file(sdna_default["csvfilepath"])
 
     try:
         # Read the list of files from the CSV file
-        with open(args.csv_file, newline='') as file:
+        with open(csv_file, newline='') as file:
             reader = csv.DictReader(file)
             file_list = list(reader)
 
@@ -132,6 +135,8 @@ def process_files(args):
             if action == 'delete':
                 if dry_run:
                     print(f"Dry Run this file will be deleted: {file_path}")
+                    data = f'{file_info["Project Name"]},{totals["run_id"]},{totals["job_id"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
+                    append_to_csv_file(file_given,data)
                 else:
                     try:
                         os.remove(file_path)
@@ -146,6 +151,8 @@ def process_files(args):
                 if destination_folder:
                     if dry_run:
                         print(f"Dry Run this file will be moved from: {file_path} to {destination_folder}")
+                        data = f'{file_info["Project Name"]},{totals["run_id"]},{totals["job_id"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
+                        append_to_csv_file(file_given,data)
                     else:
                         try:
                             os.makedirs(destination_folder, exist_ok=True)
@@ -178,16 +185,8 @@ def process_files(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process files based on a CSV input.')
-    parser.add_argument('--csv_file', required= True, help='CSV file path')
-    parser.add_argument('-o','--optionsfilepath', required = True)
-    parser.add_argument('-r', '--repoguid', required = True, help = 'Action is either delete or update')
-    parser.add_argument('-i', '--runguid', required = True)
-    parser.add_argument('-j', '--jobguid', required = True)
-    parser.add_argument('--rundate', required = True)
-    parser.add_argument('--progresspath', required = True)
-    parser.add_argument('--csvfilepath', required = True)
-    parser.add_argument('--jobid', required = True)
-    parser.add_argument('--duration', required = True)
+    parser.add_argument('-o','--sdna_options', required = True,help="SDNA Options json file")
+    parser.add_argument('-d','--sdna_default', required = True,help="SDNA Default json file")
 
     args = parser.parse_args()
     process_files(args)

@@ -105,6 +105,15 @@ def load_settings(provider):
         print(f"Settings file {settings_file} not found.")
         return None
 
+def load_jsonfile(file_path):
+    if os.path.isfile(file_path):
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    else:
+        print(f"Json file {file_path} not found.")
+        return None
+
+
 
 def send_response(handler, status, state, message):
     handler.send_response(status)
