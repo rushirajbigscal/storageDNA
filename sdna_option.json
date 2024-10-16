@@ -1,7 +1,6 @@
 {
     "csv_file": "D:\\storageDNA\\File_1.csv",
     "action": "move",
-    "destination_folder": "test",
     "dry_run": true,
     "filename_filter": "",
     "filepath_filter": "",

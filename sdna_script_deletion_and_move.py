@@ -77,7 +77,7 @@ def process_files(args):
 
     csv_file = sdna_options["csv_file"]
     action = sdna_options["action"]
-    destination_folder = sdna_options["destination_folder"]
+    destination_folder = sdna_default["destination_folder"]
     dry_run = sdna_options["dry_run"]
     filename_filter = sdna_options["filename_filter"]
     filepath_filter = sdna_options["filepath_filter"]
