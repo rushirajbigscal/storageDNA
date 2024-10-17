@@ -1,0 +1,19 @@
+{
+    "session-guid": "'9a81fb10-7b7a-4f05-bfb1-e3a7058e5c3c",
+    "repo-guid": "d4ede1aa-c640-47d2-a784-ff9f6b8414b3",
+    "run-guid" : "d4ede1aa-c640-47d2-a784-ff9f6b8414b3",
+    "run-date": "2024-08-02-02-10-10",
+    "job-id": "12",
+    "job-guid": "b41c6bf9-4db2-42ae-9681-cc110a04ae2d",
+    "progress-path": "tmp/prgress-path/b41c6bf9-4db2-42ae-9681-cc110a04ae2d.xml",
+    "csv-file-path": "tmp/csv-files/b41c6bf9-4db2-42ae-9681-cc110a04ae2d.csv",
+    "duration": 24,
+    "sources": [
+        "/mnt/source-folderA",
+        "/mnt/source-folderB"
+    ],
+    "targets": [
+        "/mnt/target-folderA"
+    ],
+    "sdna-catalog-path": "/mnt-dnaserver/sdnacatalogs"
+}

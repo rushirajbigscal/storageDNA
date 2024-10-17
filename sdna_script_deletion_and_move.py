@@ -68,30 +68,33 @@ def serialize_datetime(obj):
         return f'{obj.isoformat()}.000Z'
 
 def process_files(args):
-    sdna_options = load_jsonfile(args.sdna_options)
-    sdna_default = load_jsonfile(args.sdna_default)
+    script_json_file = load_jsonfile(args.script_json_file)
+    sdna_json_file  = load_jsonfile(args.sdna_json_file)
 
-    run_date = sdna_default["rundate"]
+    run_date = sdna_json_file["run-date"]
     json_data = json.dumps(dateparser.parse(run_date), default=serialize_datetime)
     runDate = json_data.strip('\"')
 
-    csv_file = sdna_options["csv_file"]
-    action = sdna_options["action"]
-    destination_folder = sdna_default["destination_folder"]
-    dry_run = sdna_options["dry_run"]
-    filename_filter = sdna_options["filename_filter"]
-    filepath_filter = sdna_options["filepath_filter"]
-    filesize_filter = sdna_options["filesize_filter"]
-    filesize = sdna_options["filesize"]
+    csv_file = script_json_file["csv_file"]
+    action = script_json_file["action"]
+    destination_folder = sdna_json_file["targets"][0]
+    dry_run = script_json_file["dry_run"]
+    filename_filter = script_json_file["filename_filter"]
+    filepath_filter = script_json_file["filepath_filter"]
+    filesize_filter = script_json_file["filesize_filter"]
+    filesize = script_json_file["filesize"]
+
 
     totals = {}
-    totals["duration"] = int(time.time())
-    totals["run_id"] = sdna_default["runguid"]
-    totals["job_id"] = sdna_default["jobguid"]
-    totals["progress_path"] = sdna_default["progresspath"]
+    totals["duration"] = sdna_json_file["duration"]
+    totals["run_id"] = sdna_json_file["run-guid"]
+    totals["job_id"] = sdna_json_file["job-id"]
+    totals["job_guid"] = sdna_json_file["job-guid"]
+    totals["repo_guid"] = sdna_json_file["repo-guid"]
+    totals["progress_path"] = sdna_json_file["progress-path"]
     totals["processedBytes"] = 0
     totals["processedFiles"] = 0
-    file_given = open_csv_file(sdna_default["csvfilepath"])
+    file_given = open_csv_file(sdna_json_file["csv-file-path"])
 
     try:
         # Read the list of files from the CSV file
@@ -131,12 +134,12 @@ def process_files(args):
             if action == 'delete':
                 if dry_run:
                     print(f"Dry Run this file will be deleted: {file_path}")
-                    data = f'{file_info["Project Name"]},{totals["run_id"]},{totals["job_id"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
+                    data = f'{totals["repo_guid"]},{totals["run_id"]},{totals["job_guid"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
                     append_to_csv_file(file_given,data)
                 else:
                     try:
                         os.remove(file_path)
-                        data = f'{file_info["Project Name"]},{totals["run_id"]},{totals["job_id"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
+                        data = f'{totals["repo_guid"]},{totals["run_id"]},{totals["job_guid"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
                         append_to_csv_file(file_given,data)
                         print(f"This File Deleted: {file_path} at time {timestamp}")
                     except Exception as e:
@@ -147,13 +150,13 @@ def process_files(args):
                 if destination_folder:
                     if dry_run:
                         print(f"Dry Run this file will be moved from: {file_path} to {destination_folder}")
-                        data = f'{file_info["Project Name"]},{totals["run_id"]},{totals["job_id"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
+                        data = f'{totals["repo_guid"]},{totals["run_id"]},{totals["job_guid"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
                         append_to_csv_file(file_given,data)
                     else:
                         try:
                             os.makedirs(destination_folder, exist_ok=True)
                             shutil.move(file_path, destination_folder)
-                            data = f'{file_info["Project Name"]},{totals["run_id"]},{totals["job_id"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
+                            data = f'{totals["repo_guid"]},{totals["run_id"]},{totals["job_guid"]},{runDate},{file_info['File Name']},{file_info['File Size Bytes']}'
                             append_to_csv_file(file_given,data)
                             print(f"File Moved: {file_path} to {destination_folder} at time {timestamp}")
                         except Exception as e:
@@ -181,8 +184,8 @@ def process_files(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process files based on a CSV input.')
-    parser.add_argument('-o','--sdna_options', required = True,help="SDNA Options json file")
-    parser.add_argument('-d','--sdna_default', required = True,help="SDNA Default json file")
+    parser.add_argument('--sdna-json-file', required = True,help="sdna-json-file")
+    parser.add_argument('--script-json-file', required = True,help="script-json-file")
 
     args = parser.parse_args()
     process_files(args)
