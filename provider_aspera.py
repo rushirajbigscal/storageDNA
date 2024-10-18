@@ -5,11 +5,11 @@ from datetime import datetime
 import argparse
 from action_functions import *
 
-def browse_folder(aspera_workspace,file_path):
+def browse_folder(workspace,source_folder):
     command = [
         'ascli', 'aoc', 'files',
-        f'--workspace={aspera_workspace}',
-        'browse', f'{file_path}',
+        f'--workspace={workspace}',
+        'browse', f'{source_folder}',
         '--format=csv'
     ]
     # result = subprocess.run(command, capture_output=True)
@@ -19,15 +19,16 @@ DRUM_SAMPLES,link,,,2024-09-19T13:31:25Z,edit"""
     return csv_output
 
 
-def scan_files(aspera_workspace,file_path):
+def scan_files(workspace, source_folder):
     command = [
         'ascli', 'aoc', 'files',
-        f'--workspace={aspera_workspace}',
-        'find', f'{file_path}',
+        f'--workspace={workspace}',
+        'find', f'{source_folder}',
         '@ruby:->(f){f["type"].eql?("file")}',
         '--fields=size,path,modified_time,type',
         '--format=csv'
     ]
+
     # result = subprocess.run(command, capture_output=True)
     result = """544743466,/DRUM_SAMPLES/Squid_Game_Season_1_Episode_1_81262746_00010421_00015108_ko_8.mov,,file
 287737214,/DRUM_SAMPLES/The_Witcher_Season_1_Four_Marks_80244464_00145801_00150902_en_6.mov,2024-09-19T13:31:47Z,file
@@ -43,15 +44,15 @@ def scan_files(aspera_workspace,file_path):
     csv_output = result.strip().split('\n')
     return csv_output
 
-def upload_file(aspera_workspace,target_path,file_path):
+def upload_file(workspace,target_path,file_path):
     mkdir_command = [
         'ascli', 'aoc', 'files',
-        f'--workspace={aspera_workspace}',
+        f'--workspace={workspace}',
         'mkdir', target_path
     ]
     upload_command = [
         'ascli', 'aoc', 'files',
-        f'--workspace={aspera_workspace}',
+        f'--workspace={workspace}',
         'upload',
         f'--to-folder={target_path}',
         file_path
@@ -61,10 +62,10 @@ def upload_file(aspera_workspace,target_path,file_path):
     print(f"File '{file_path}' uploaded to '{target_path}' successfully.")
 
 
-def download_file(aspera_workspace, file_path, target_path):
+def download_file(workspace, file_path, target_path):
     command = [
         'ascli', 'aoc', 'files',
-        f'--workspace={aspera_workspace}',
+        f'--workspace={workspace}',
         'download',
         f'--to-folder={target_path}/',
         file_path
@@ -156,40 +157,35 @@ def GetObjectDict(files_list : list):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-w','--aspera-workspace', required=True, help='workspace name')
+    parser.add_argument('-w','--workspace', required=True, help='workspace name')
     parser.add_argument('-m', '--mode', required = True, help = 'upload,browse,download,list')
     parser.add_argument('-s','--source',help='source file')
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-f','--foldername',help='folder_name_to_create')
-    parser.add_argument('-x','--xmlfilepath',help='xmlfilename')
-
 
     args = parser.parse_args()
-    aspera_workspace = args.aspera_workspace
+    workspace = args.workspace
     mode = args.mode
     file_path = args.source
     target_path = args.target
     folder_name = args.foldername
-    xmlfilepath = args.xmlfilepath
 
 
     if mode == 'list':
-        file_path = file_path if file_path else "/"
-        files_list = scan_files(aspera_workspace,file_path)
+        files_list = scan_files(workspace, file_path)
         objects_dict = GetObjectDict(files_list)
-        if objects_dict and file_path:
-            generate_xml_from_file_objects(objects_dict, xmlfilepath)
-            print(f"Generated XML file: {xmlfilepath}")
+        if objects_dict and target_path:
+            generate_xml_from_file_objects(objects_dict, target_path)
+            print(f"Generated XML file: {target_path}")
         else:
             print("Failed to generate XML file.")
 
     elif mode == 'upload':
-        upload_file(aspera_workspace,target_path,file_path)
+        upload_file(workspace,target_path,file_path)
 
     elif mode == 'browse':
         folders_list = []
-        file_path = file_path if file_path else "/"
-        folders = browse_folder(aspera_workspace,file_path)
+        folders = browse_folder(workspace, file_path)
         for folder_data in folders:
             folder = folder_data.strip().split(",")
             folder_name = folder[0]
@@ -203,4 +199,4 @@ if __name__ == "__main__":
         # print(f"Generated XML file: {file_path}")
 
     elif mode == "download":
-        download_file(aspera_workspace,file_path,target_path)
+        download_file(workspace,file_path,target_path)

@@ -1,1 +1,0 @@
-projectName.string(),runId.string(),jobGuid.string(),runDate.date(2006-01-02 15:04:05),fileName.string(),fileSize.string()

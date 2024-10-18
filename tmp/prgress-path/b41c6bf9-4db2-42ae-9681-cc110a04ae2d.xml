@@ -1,5 +1,5 @@
-<update-job-progress duration="0" avg_bandwidth="232">
-      <progress jobid="729356D8-3C9D-A69E-3664-C9E153669560" cur_bandwidth="0" stguid="729356D8-3C9D-A69E-3664-C9E153669560" requestid="12">
+<update-job-progress duration="1729160203000" avg_bandwidth="232">
+      <progress jobid="12" cur_bandwidth="0" stguid="d4ede1aa-c640-47d2-a784-ff9f6b8414b3" requestid="12">
         <scanning>false</scanning>
         <scanned>12</scanned>
         <run-status>ANALYZING DELETE AND MOVE FILES</run-status>
