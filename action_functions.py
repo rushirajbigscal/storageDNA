@@ -50,8 +50,7 @@ def add_CDATA_tags_with_id(folders : list):
 
 
 def get_filename(filePath : str):
-    filePath = os.path.normpath(filePath)
-    return filePath.split("\\")[-1]
+    return os.path.basename(filePath)
 
 
 def isMatch(s, p):
