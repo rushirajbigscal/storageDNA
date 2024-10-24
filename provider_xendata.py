@@ -14,46 +14,60 @@ VALID_MODES = ['upload', 'download', 'list','browse']
 
 END_STATES = ['Success', 'Failed']
 
-linux_dir = "/opt/sdna/bin"
-is_linux = 0
-if os.path.isdir(linux_dir):
-    is_linux = 1
-DNA_CLIENT_SERVICES = ''
-if is_linux == 1:    
-    DNA_CLIENT_SERVICES = '/etc/StorageDNA/DNAClientServices.conf'
-    SERVERS_CONF_FILE = "/etc/StorageDNA/Servers.conf"
-else:
-    DNA_CLIENT_SERVICES = '/Library/Preferences/com.storagedna.DNAClientServices.plist'
-    SERVERS_CONF_FILE = "/Library/Preferences/com.storagedna.Servers.plist"
 
 def GetRequestStatus(cloudConfigDetails, requestId):
     url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/xen/export/{requestId}"
     headers = { 'Content-Type': 'application/json; charset=utf-8'}
     print (f'In GetRequestStatus - URL = {url}, headers = {headers}')
-    resp_JSON = requests.get(url, headers=headers, verify=False,timeout=3600).json()
-    return resp_JSON
+    response = requests.get(url, headers=headers).json()
+    if response.status_code != 200:
+        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+    response = response.json()
+    return response
 
 
-def GetAllObjects(cloudConfigDetails,path,recursive=None):
+def GetAllObjects(cloudConfigDetails,recursive=None):
     url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/xen/export"
     params = {
-            'path': path,
+            'path': cloudConfigDetails["foldername"],
             'recursive': recursive
             }
     
     print (f'In GetAllObjects - URL = {url}, params = {params}')
-    resp_JSON = requests.get(url, params=params, verify=False).json()
-    return resp_JSON
+    response = requests.get(url, params=params).json()
+    if response.status_code != 200:
+        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+    response = response.json()
+    return response
 
 
-def GetObjectDict(data : dict):
+def GetObjectDict(data : dict,params):
     scanned_files = 0
     selected_count = 0
     output = {}
     file_object_list = []
     extensions = []
     total_size = 0
-    '''
+    if "filtertype" in params:
+        filter_type = params["filtertype"]
+    else:
+        filter_type = None
+
+    if "filterfile" in params:
+        filter_file = params["filterfile"]
+    else:
+        filter_file = None
+
+    if "policyfile" in params:
+        policy_file = params["policyfile"]
+    else:
+        policy_file = None
+
+    policy_dict = None
+
+    if filter_type is None or filter_file is None:
+       filter_type = 'none'
+
     if filter_type.lower() != 'none':
         if not os.path.isfile(filter_file):
             print(f"Filter file given: {filter_file} not found.")
@@ -62,17 +76,20 @@ def GetObjectDict(data : dict):
         with open(filter_file, 'r') as f:
             extensions = [ext.strip() for ext in f.readlines()]
 
-    policy_dict = load_policies_from_file(policy_file)
-    '''
+    if not policy_file is None:
+        policy_dict = load_policies_from_file(policy_file)
 
     for result in data['requestResults']:
         mtime_struct = datetime.strptime(result['Creation'], "%m/%d/%Y %H:%M:%S") 
         atime_struct = datetime.strptime(result['Last-Accessed'], "%m/%d/%Y %H:%M:%S")
         mtime_epoch_seconds = int(mtime_struct.timestamp())
         atime_epoch_seconds = int(atime_struct.timestamp())
+        file_path = result["File-Path"]
+        file_name = get_filename(file_path)
+        file_size = result["File-Size"] if result["File-Type"] == "File" else "0"
+        file_type = "file" if file_size != "0" else "dir"
         
-        '''
-        if is_dir or filter_type == 'none':
+        if file_type.lower() != 'file'  or filter_type == 'none':
             include_file = True
         elif len(extensions) == 0:
             continue
@@ -83,26 +100,25 @@ def GetObjectDict(data : dict):
         if include_file == False:
             continue
 
-        policy_type = policy_dict["type"]
-        policy_entries = policy_dict["entries"]
-        
-        if policy_type == "ERROR":
-            continue
+        if not policy_dict is None:
+            policy_type = policy_dict["type"]
+            policy_entries = policy_dict["entries"]
+            
+            if policy_type == "ERROR":
+                continue
 
-        if policy_type == "NOFILE":
-            include_file = True
+            if policy_type == "NOFILE":
+                include_file = True
 
-        elif include_file and len(policy_entries) > 0:
-            include_file = file_in_policy(policy_dict, file_name, file_parent_path, file_size, mtime_epoch_seconds)
-        '''
+            elif include_file and len(policy_entries) > 0:
+                include_file = file_in_policy(policy_dict, file_name, file_path, file_size, mtime_epoch_seconds)
 
-        include_file = True
         file_object = {}
         if include_file == True:
-            file_object["name"] = result["File-Path"]
-            file_object["size"] = result["File-Size"] if result["File-Type"] == "File" else "0"
+            file_object["name"] = file_path
+            file_object["size"] = file_size
             file_object["mode"] = "0"
-            file_object["type"] = "F_DIR" if result["File-Type"] == "Folder" else "F_REG"
+            file_object["type"] = "F_REG" if file_type == "file" else "F_DIR"
             file_object["mtime"] = f'{mtime_epoch_seconds}'
             file_object["atime"] = f'{atime_epoch_seconds}'
             file_object["owner"] = "0"
@@ -125,54 +141,47 @@ def GetObjectDict(data : dict):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    
-    parser.add_argument('-m', '--mode', required = True, help = 'upload, download, list,browse')
-    parser.add_argument('-x','--xml_filename',required=False,help='xml_filename')
-    # parser.add_argument('-f','--filter',required=False,help='Filter in reg expresion')
-    parser.add_argument('-p', '--path', required=False, default='V:\\', help="Path of storage disk (default: V:\\)")
+    parser.add_argument('-c', '--config', required = True, help = 'Configuration name')
+    parser.add_argument('-m', '--mode', required = True, help = 'upload,browse,download,list,actions')
+    parser.add_argument('-t','--target',help='target_path')
+    parser.add_argument('-f','--foldername',help='folder_name_to_create')
+    parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
+    parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
+    parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
     
     args = parser.parse_args()
-    
     mode = args.mode
-    # filter = args.filter
-    path = args.path
-    xml_filename = args.xml_filename
+    target_path = args.target
+    folder_name = args.foldername
 
-    '''
-    config_name = args.configname
-    
-    cloudTargetPath = ''
-    
-    if is_linux == 1:
-        config_parser = ConfigParser()
-        config_parser.read(DNA_CLIENT_SERVICES)
-        if config_parser.has_section('General') and config_parser.has_option('General','cloudconfigfolder'):
-            section_info = config_parser['General']
-            cloudTargetPath = section_info['cloudconfigfolder'] + "/cloud_targets.conf"
-    else:
-        with open(DNA_CLIENT_SERVICES, 'rb') as fp:
-            my_plist = plistlib.load(fp)
-            cloudTargetPath = my_plist["CloudConfigFolder"] + "/cloud_targets.conf"
-            
-    if not os.path.exists(cloudTargetPath):
-        err= "Unable to find cloud target file: " + cloudTargetPath
-        sys.exit(err)
+    config_map = loadConfigurationMap(args.config)
+    # config_map = {'hostname': '192.168.1.172',
+    #                      'port': 8000 
+    #             }
 
-    config_parser = ConfigParser()
-    config_parser.read(cloudTargetPath)
-    if not config_name in config_parser.sections():
-        err = 'Unable to find cloud configuration: ' + config_name
-        sys.exit(err)
-        
-    cloud_config_info = config_parser[config_name]
-    '''
-    cloud_config_info = {'hostname': '192.168.1.172',
-                         'port': 8080 
-                        }
-    
+    params_map = {}
+    params_map["foldername"] = args.foldername
+    params_map["target"] = args.target
+    params_map["filtertype"] = args.filtertype
+    params_map["filterfile"] = args.filterfile
+    params_map["policyfile"] = args.policyfile
+
+    for key in config_map:
+        if key in params_map:
+            print(f'Skipping existing key {key}')
+        else:
+            params_map[key] = config_map[key]
+
+    if mode == 'actions':
+        print('browse,list')
+        exit(0)
 
     if mode == 'list':
-        all_objs_list = GetAllObjects(cloud_config_info,path,recursive='true')
+        if target_path is None or folder_name is None:
+            print('Target path (-t <targetpath> ) and folder name (-f <foldername> ) options are required for list')
+            exit(1)
+
+        all_objs_list = GetAllObjects(params_map,recursive='true')
         print(all_objs_list)
         if not all_objs_list['requestId']:
             exit(-1)
@@ -180,31 +189,39 @@ if __name__ == '__main__':
         requestId = all_objs_list['requestId'] 
         state_name = ""
         while state_name not in END_STATES:
-            listing_json_responce = GetRequestStatus(cloud_config_info,requestId)
+            listing_json_responce = GetRequestStatus(params_map,requestId)
             state_name = listing_json_responce['requestStatus']
             print(state_name)
             time.sleep(5)
 
-        objects_dict = GetObjectDict(listing_json_responce)
-        generate_xml_from_file_objects(objects_dict, xml_filename)
-        print(f"Generated XML file: {xml_filename}")
-        #os.remove(directory)
-        print ("GOOD")
+        objects_dict = GetObjectDict(listing_json_responce,params_map)
+        if objects_dict and target_path:
+            generate_xml_from_file_objects(objects_dict, target_path)
+            print(f"Generated XML file: {target_path}")
+            exit(0)
+        else:
+            print("Failed to generate XML file.")
+            exit(1)
+
 
     elif mode == 'browse':
+        if folder_name is None:
+            print('Folder name (-f <foldername> ) options are required for browse.')
+            exit(1)
+
         folders = set()
-        all_objs_list = GetAllObjects(cloud_config_info,path,recursive='false')
+        all_objs_list = GetAllObjects(params_map,recursive='false')
         requestId = all_objs_list['requestId'] 
         state_name = ""
         while state_name not in END_STATES:
-            data = GetRequestStatus(cloud_config_info,requestId)
+            data = GetRequestStatus(params_map,requestId)
             state_name = data['requestStatus']
             print(state_name)
             time.sleep(1)
             
         if data['requestStatus'] == "Success":
             for item in data['requestResults']:
-                path =os.path.normpath(path)  
+                path =os.path.normpath(folder_name)  
                 File_Path = os.path.normpath(item['File-Path'])
 
                 if item['File-Type'] == 'Folder' and File_Path.startswith(path):
@@ -217,7 +234,7 @@ if __name__ == '__main__':
         folders = list(folders)
         xml_output = add_CDATA_tags(folders)
         print(xml_output)
-        # generate_xml(xml_filename,xml_output)
+        exit(0)
 
 
         

@@ -1,8 +1,11 @@
 import os
 import json
+import sys
 import time
+import plistlib
 import xml.etree.ElementTree as ET
 import glob
+from configparser import ConfigParser
 
 def generate_html(metadata, file_name):
     if isinstance(metadata, str):
@@ -103,15 +106,6 @@ def load_settings(provider):
     else:
         print(f"Settings file {settings_file} not found.")
         return None
-
-def load_jsonfile(file_path):
-    if os.path.isfile(file_path):
-        with open(file_path, 'r') as f:
-            return json.load(f)
-    else:
-        print(f"Json file {file_path} not found.")
-        return None
-
 
 
 def send_response(handler, status, state, message):
@@ -329,6 +323,48 @@ def restore_ticket_to_csv(ticket_path, current_time):
     file.close()
     return csv_file
 
+def loadConfigurationMap(config_name):
+
+    config_map = {}
+
+    is_linux = 0
+    if os.path.isdir("/opt/sdna/bin/"):
+        is_linux = 1
+    if is_linux == 1:
+        DNA_CLIENT_SERVICES = '/etc/StorageDNA/DNAClientServices.conf'
+    else:
+        DNA_CLIENT_SERVICES = '/Library/Preferences/com.storagedna.DNAClientServices.plist'
+
+    if not os.path.exists(DNA_CLIENT_SERVICES):
+        print(f'Unable to find configuration file: {DNA_CLIENT_SERVICES}')
+        return False
+
+    if is_linux == 1:
+        config_parser = ConfigParser()
+        config_parser.read(DNA_CLIENT_SERVICES)
+        if config_parser.has_section('General') and config_parser.has_option('General','cloudconfigfolder'):
+            section_info = config_parser['General']
+            cloudTargetPath = section_info['cloudconfigfolder'] + "/cloud_targets.conf"
+    else:
+        with open(DNA_CLIENT_SERVICES, 'rb') as fp:
+            my_plist = plistlib.load(fp)
+            cloudTargetPath = my_plist["CloudConfigFolder"] + "/cloud_targets.conf"
+
+    if not os.path.exists(cloudTargetPath):
+        err= "Unable to find cloud target file: " + cloudTargetPath
+        sys.exit(err)
+
+    config_parser = ConfigParser()
+    config_parser.read(cloudTargetPath)
+    if not config_name in config_parser.sections():
+        err = 'Unable to find cloud configuration: ' + config_name
+        sys.exit(err)
+
+    cloud_config_info = config_parser[config_name]
+    for  key in cloud_config_info:
+         config_map[key] = cloud_config_info[key]
+
+    return config_map
 
 # def restore_ticket_to_csv(xml_ticket):
 #     csv_file = xml_ticket.replace(".xml",".csv")
