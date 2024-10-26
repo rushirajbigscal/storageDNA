@@ -196,3 +196,7 @@ if __name__ == "__main__":
         else:
             print("Failed to generate XML file.")
             exit(1)
+            
+    else:
+        print(f'Unsupported mode {mode}')
+        exit(1)

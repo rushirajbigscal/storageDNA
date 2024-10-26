@@ -69,13 +69,13 @@ def create_asset_id(file_name,collection_id):
         json=payload if collection_id else payload_default,
         params=params if collection_id else params_default
     )
-    if response.status_code != 200:
+    if response.status_code != 201:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
     return response['id'], response['created_by_user']
 
 
-def create_collection(collection_name,collection_id = None):
+def create_collection(collection_name,collection_id):
     payload = {"title": collection_name,"parent_id":collection_id}
     payload_default = {"title": collection_name}
 
@@ -90,7 +90,7 @@ def create_collection(collection_name,collection_id = None):
         json=payload if collection_id else payload_default,
         params=params if collection_id else None
     )
-    if response.status_code != 200:
+    if response.status_code != 201:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
     return response['id']
@@ -120,7 +120,7 @@ def create_format_id(asset_id, user_id):
                "Auth-Token" : params_map["Auth-Token"]
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/formats/', headers=headers, json=payload)
-    if response.status_code != 200:
+    if response.status_code != 201:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
     return response['id']
@@ -131,7 +131,7 @@ def create_fileset_id(asset_id, format_id, file_name, storage_id,upload_path):
                "Auth-Token" : params_map["Auth-Token"]
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/file_sets/', headers=headers, json=payload)
-    if response.status_code != 200:
+    if response.status_code != 201:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
     return response['id']
@@ -151,7 +151,7 @@ def get_upload_url(asset_id, file_name, file_size, fileset_id, storage_id, forma
                "Auth-Token" : params_map["Auth-Token"]
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/files/', headers=headers, json=file_info)
-    if response.status_code != 200:
+    if response.status_code != 201:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
     return response['upload_url'], response['id']
@@ -170,7 +170,7 @@ def get_upload_url_s3(asset_id, file_name, file_size, fileset_id, storage_id, fo
                "Auth-Token" : params_map["Auth-Token"]
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/files/', headers=headers, json=file_info)
-    if response.status_code != 200:
+    if response.status_code != 201:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
     return response['multipart_upload_url'], response['id']
@@ -189,7 +189,7 @@ def get_upload_url_b2(asset_id, file_name, file_size, fileset_id, storage_id, fo
                "Auth-Token" : params_map["Auth-Token"]
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/files/', headers=headers, json=file_info)
-    if response.status_code != 200:
+    if response.status_code != 201:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
     return response['upload_url'], response['id'],response["upload_credentials"]["authorizationToken"],response["upload_filename"]
@@ -199,7 +199,6 @@ def get_upload_id_s3(upload_url):
     response = requests.post(upload_url)
     if response.status_code != 200:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
-    response = response.json()
     root = ET.fromstring(response.text)
     namespace = root.tag.split('}')[0] + '}'
     upload_id = root.find(f'{namespace}UploadId').text
@@ -215,8 +214,7 @@ def get_part_url_s3(asset_id, file_id, upload_id):
     if response.status_code != 200:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
-    part_data = response
-    return part_data["objects"][0]["url"]
+    return response["objects"][0]["url"]
 
 def upload_file_gcs(upload_url, file_path, file_size):
     google_headers = {
@@ -240,11 +238,13 @@ def upload_file_gcs(upload_url, file_path, file_size):
     with open(file_path, 'rb') as f:
         full_upload_url = f"{upload_url}&upload_id={upload_id}"
         x = requests.put(full_upload_url, headers=google_headers, data=f)
-        print(x.text)
+        return x
 
 def upload_file_s3(part_url, file_path,upload_id, asset_id, file_id):
     with open(file_path, 'rb') as file:
         response = requests.put(part_url, data=file)
+        if response.status_code != 200:
+            return f"Response error. Status - {response.status_code}, Error - {response.text}"
         etag = response.headers['etag']
     complete_url_response = requests.get(
         f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/multipart_url/',
@@ -253,7 +253,9 @@ def upload_file_s3(part_url, file_path,upload_id, asset_id, file_id):
                },
         params={"upload_id": upload_id, "type": "complete_url"}
     )
-    
+    if complete_url_response.status_code != 200:
+        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+    complete_url_response =complete_url_response.json()
     complete_url = complete_url_response['complete_url']
     xml_payload = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <CompleteMultipartUpload>
@@ -266,7 +268,7 @@ def upload_file_s3(part_url, file_path,upload_id, asset_id, file_id):
     response = requests.post(complete_url, data=xml_payload, headers=headers)
     if response.status_code != 200:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
-    return response.status_code, response.text
+    return response
 
 def upload_file_b2(upload_url,authorizationToken,file_path,upload_filename,sha1_of_file):
     headers = {
@@ -278,19 +280,20 @@ def upload_file_b2(upload_url,authorizationToken,file_path,upload_filename,sha1_
     
     with open(file_path, 'rb') as f:
         x = requests.post(upload_url,headers=headers,data=f)
-        print(x.text)
+        return x
 
 def upload_file_azure(upload_url, file_path):
     headers = { "x-ms-blob-type" : "BlockBlob"}
     with open(file_path, 'rb') as file:
         x = requests.put(upload_url, data=file,headers=headers)
-        print(x.text)
+        return x
 
 def file_status_update(asset_id, file_id):
     headers = {"App-ID":params_map["App-ID"],
             "Auth-Token" : params_map["Auth-Token"]
             }
     upload_file_status_close = requests.patch(f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/', headers=headers, json={"status": "CLOSED", "progress_processed": 100})
+    return upload_file_status_close
 
 def collection_fullpath(collection_id):
     headers = {"App-ID":params_map["App-ID"],
@@ -532,9 +535,9 @@ if __name__ == '__main__':
     config_map = {
     "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
     "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
-    "name": "SDNA_GCS",
-    "method": "GCS"
-    }
+    "name": "SDNA_AZURE",
+    "method": "AZURE"
+}
     
     params_map = {}
     params_map["foldername"] = args.foldername
@@ -555,6 +558,9 @@ if __name__ == '__main__':
         exit(0)
 
     if mode == 'list':
+        if target_path is None:
+            print('Target path (-t <targetpath> ) option are required for list')
+            exit(1)
         if collectionid:
             collection = [{'id':collectionid}]
         else:
@@ -571,49 +577,81 @@ if __name__ == '__main__':
 
 
     elif mode == 'upload':
+        if collectionid is None or file_path is None:
+            print(f'Collection id (-id <collection_id> ) and file path (-s <source> ) options is required for upload')
+            exit(1)
         file_name = get_filename(file_path)
         file_size = os.path.getsize(file_path)
         storage_name = params_map["name"]
         storage_method = params_map["method"]
-        # collection_id = "e429768c-59f4-11ef-a87c-eeb365145e25"
-        if args.collection_id is None:
-            print(f'Collection id (-id <collection_id> ) option is required for upload')
-            exit(2)
-        collection_id = collectionid
-        storage_id = get_storage_id(storage_name,storage_method)
-        asset_id, user_id = create_asset_id(file_name,collection_id)
-        add_asset_in_collection(asset_id,collection_id)
-        upload_path = collection_fullpath(collection_id)
-        format_id = create_format_id(asset_id, user_id)
-        fileset_id = create_fileset_id(asset_id, format_id, file_name, storage_id,upload_path)
+
+        if storage_method and storage_name:
+            collection_id = collectionid
+            storage_id = get_storage_id(storage_name,storage_method)
+            asset_id, user_id = create_asset_id(file_name,collection_id)
+            add_asset_in_collection(asset_id,collection_id)
+            upload_path = collection_fullpath(collection_id)
+            format_id = create_format_id(asset_id, user_id)
+            fileset_id = create_fileset_id(asset_id, format_id, file_name, storage_id,upload_path)
+        else:
+            print("Storage Name and Method is requird.")
+            exit(1)
 
         if storage_method == "GCS":
             upload_url, file_id = get_upload_url(asset_id, file_name, file_size, fileset_id, storage_id, format_id,upload_path)
-            upload_file_gcs(upload_url, file_path, file_size)
-            file_status_update(asset_id, file_id)
-            exit(0)
+            upload_code = upload_file_gcs(upload_url, file_path, file_size)
+            if upload_code.status_code == 200:
+                response = file_status_update(asset_id, file_id)
+                if response.status_code != 200:
+                    print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+                print("File Upload Succesfully")
+                exit(0)
+            else:
+                print(f"Response error. Status - {upload_code.status_code}, Error - {upload_code.text}")
+                exit(1)
         
         elif storage_method == "S3":
             upload_url, file_id = get_upload_url_s3(asset_id, file_name, file_size, fileset_id, storage_id, format_id,upload_path)
             upload_id = get_upload_id_s3(upload_url)
             part_url = get_part_url_s3(asset_id, file_id, upload_id)
-            upload_file_s3(part_url, file_path,upload_id, asset_id, file_id)
-            file_status_update(asset_id, file_id)
-            exit(0)
+            upload_code = upload_file_s3(part_url, file_path,upload_id, asset_id, file_id)
+            if upload_code.status_code == 200:
+                response = file_status_update(asset_id, file_id)
+                if response.status_code != 200:
+                    print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+                print("File Upload Succesfully")
+                exit(0)
+            else:
+                print(f"Response error. Status - {upload_code.status_code}, Error - {upload_code.text}")
+                exit(1)
 
         elif storage_method == "B2":
             upload_url, file_id,authorizationToken,upload_filename = get_upload_url_b2(asset_id, file_name, file_size, fileset_id, storage_id, format_id,upload_path)
             sha1_of_file  = calculate_sha1(file_path)
-            upload_file_b2(upload_url,authorizationToken,file_path,upload_filename,sha1_of_file)
-            file_status_update(asset_id, file_id)
-            exit(0)
+            upload_code = upload_file_b2(upload_url,authorizationToken,file_path,upload_filename,sha1_of_file)
+            if upload_code.status_code == 200:
+                response = file_status_update(asset_id, file_id)
+                if response.status_code != 200:
+                    print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+                print("File Upload Succesfully")
+                exit(0)
+            else:
+                print(f"Response error. Status - {upload_code.status_code}, Error - {upload_code.text}")
+                exit(1)
 
         elif storage_method == "AZURE":
             upload_url, file_id = get_upload_url(asset_id, file_name, file_size, fileset_id, storage_id, format_id,upload_path)
-            upload_file_azure(upload_url, file_path)
-            file_status_update(asset_id, file_id)
-            exit(0)
-
+            upload_code = upload_file_azure(upload_url, file_path)
+            print(upload_code)
+            if upload_code.status_code == 200:
+                response = file_status_update(asset_id, file_id)
+                if response.status_code != 200:
+                    print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+                print("File Upload Succesfully")
+                exit(0)
+            else:
+                print(f"Response error. Status - {upload_code.status_code}, Error - {upload_code.text}")
+                exit(1)
         else:
             exit(1)
         
@@ -638,6 +676,9 @@ if __name__ == '__main__':
 
 
     elif mode == "download":
+        if target_path is None or tmp_id is None:
+            print('Target path (-t <targetpath> ) and Tmp id (-tmp <tmp_id>) options are required for download')
+            exit(1)
         download_path = os.path.normpath(target_path)
         tmp_id_list = tmp_id.split("|")
         asset_id = tmp_id_list[0]
@@ -662,6 +703,9 @@ if __name__ == '__main__':
     elif mode == "createfolder":
         # folder_path = "rushiraj/tej/123/456"
         # collection_id = ["3ded220c-596b-11ef-a848-52f392b714aa"]
+        if folder_path is None:
+            print(f'Folder path (-f <folderpath> ) option is required for upload')
+            exit(1)
         collection_id = []
         collection_id.append(collectionid)
         collection_path = os.path.normpath(folder_path).split("\\")
@@ -669,3 +713,7 @@ if __name__ == '__main__':
             id = create_collection(collection_path_parts,collection_id[-1])
             collection_id.append(id)
         print(collection_id[-1])
+
+    else:
+        print(f'Unsupported mode {mode}')
+        exit(1)

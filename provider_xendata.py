@@ -19,7 +19,7 @@ def GetRequestStatus(cloudConfigDetails, requestId):
     url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/xen/export/{requestId}"
     headers = { 'Content-Type': 'application/json; charset=utf-8'}
     print (f'In GetRequestStatus - URL = {url}, headers = {headers}')
-    response = requests.get(url, headers=headers).json()
+    response = requests.get(url, headers=headers)
     if response.status_code != 200:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
@@ -34,7 +34,7 @@ def GetAllObjects(cloudConfigDetails,recursive=None):
             }
     
     print (f'In GetAllObjects - URL = {url}, params = {params}')
-    response = requests.get(url, params=params).json()
+    response = requests.get(url, params=params)
     if response.status_code != 200:
         return f"Response error. Status - {response.status_code}, Error - {response.text}"
     response = response.json()
@@ -154,10 +154,10 @@ if __name__ == '__main__':
     target_path = args.target
     folder_name = args.foldername
 
-    config_map = loadConfigurationMap(args.config)
-    # config_map = {'hostname': '192.168.1.172',
-    #                      'port': 8000 
-    #             }
+    # config_map = loadConfigurationMap(args.config)
+    config_map = {'hostname': '192.168.1.172',
+                         'port': 8000 
+                }
 
     params_map = {}
     params_map["foldername"] = args.foldername
@@ -236,6 +236,9 @@ if __name__ == '__main__':
         print(xml_output)
         exit(0)
 
+    else:
+        print(f'Unsupported mode {mode}')
+        exit(1)
 
         
 
