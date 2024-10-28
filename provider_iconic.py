@@ -23,7 +23,8 @@ def get_call_of_collections():
             }
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     for collection_id in response['objects']:
         collection_ids.append({"collection_id" : collection_id['id'],"collectionname" : collection_id['title']}) 
@@ -36,7 +37,8 @@ def get_call_of_collections_content(collection_id):
             }
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response['objects']
 
@@ -46,7 +48,8 @@ def get_storage_id(storage_name,storage_method):
             }
     response = requests.get(f'{domain}/API/files/v1/storages/', headers=headers)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     storage_id = []
     for storage in response["objects"]:
@@ -70,7 +73,8 @@ def create_asset_id(file_name,collection_id):
         params=params if collection_id else params_default
     )
     if response.status_code != 201:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response['id'], response['created_by_user']
 
@@ -91,7 +95,8 @@ def create_collection(collection_name,collection_id):
         params=params if collection_id else None
     )
     if response.status_code != 201:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response['id']
 
@@ -102,7 +107,8 @@ def get_filename_from_asset(asset_id):
             }
     response = requests.get(f'{domain}/API/assets/v1/assets/{asset_id}/', headers=headers)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response["title"]
 
@@ -121,7 +127,8 @@ def create_format_id(asset_id, user_id):
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/formats/', headers=headers, json=payload)
     if response.status_code != 201:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response['id']
 
@@ -132,7 +139,8 @@ def create_fileset_id(asset_id, format_id, file_name, storage_id,upload_path):
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/file_sets/', headers=headers, json=payload)
     if response.status_code != 201:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response['id']
 
@@ -152,7 +160,8 @@ def get_upload_url(asset_id, file_name, file_size, fileset_id, storage_id, forma
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/files/', headers=headers, json=file_info)
     if response.status_code != 201:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response['upload_url'], response['id']
 
@@ -171,7 +180,8 @@ def get_upload_url_s3(asset_id, file_name, file_size, fileset_id, storage_id, fo
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/files/', headers=headers, json=file_info)
     if response.status_code != 201:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response['multipart_upload_url'], response['id']
 
@@ -190,7 +200,8 @@ def get_upload_url_b2(asset_id, file_name, file_size, fileset_id, storage_id, fo
                }
     response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/files/', headers=headers, json=file_info)
     if response.status_code != 201:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response['upload_url'], response['id'],response["upload_credentials"]["authorizationToken"],response["upload_filename"]
 
@@ -198,7 +209,8 @@ def get_upload_url_b2(asset_id, file_name, file_size, fileset_id, storage_id, fo
 def get_upload_id_s3(upload_url):
     response = requests.post(upload_url)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     root = ET.fromstring(response.text)
     namespace = root.tag.split('}')[0] + '}'
     upload_id = root.find(f'{namespace}UploadId').text
@@ -212,7 +224,8 @@ def get_part_url_s3(asset_id, file_id, upload_id):
                }
     response = requests.get(part_url, headers=headers, params=params)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response["objects"][0]["url"]
 
@@ -244,7 +257,8 @@ def upload_file_s3(part_url, file_path,upload_id, asset_id, file_id):
     with open(file_path, 'rb') as file:
         response = requests.put(part_url, data=file)
         if response.status_code != 200:
-            return f"Response error. Status - {response.status_code}, Error - {response.text}"
+            print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+            return False
         etag = response.headers['etag']
     complete_url_response = requests.get(
         f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/multipart_url/',
@@ -254,7 +268,8 @@ def upload_file_s3(part_url, file_path,upload_id, asset_id, file_id):
         params={"upload_id": upload_id, "type": "complete_url"}
     )
     if complete_url_response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     complete_url_response =complete_url_response.json()
     complete_url = complete_url_response['complete_url']
     xml_payload = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -267,7 +282,8 @@ def upload_file_s3(part_url, file_path,upload_id, asset_id, file_id):
     headers = {'Content-Type': 'application/xml'}
     response = requests.post(complete_url, data=xml_payload, headers=headers)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     return response
 
 def upload_file_b2(upload_url,authorizationToken,file_path,upload_filename,sha1_of_file):
@@ -302,7 +318,8 @@ def collection_fullpath(collection_id):
     params = {"get_upload_path": "true"}
     response = requests.get(f'{domain}/API/assets/v1/collections/{collection_id}/full/path', headers=headers,params=params)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return '' if "errors" in response else response
 
@@ -312,7 +329,8 @@ def get_download_link_files(asset_id,file_id):
     }
     response = requests.get(f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/', headers=headers)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response["original_name"],response["url"]
 
@@ -322,7 +340,8 @@ def get_download_link_proxy(asset_id,proxies_id):
     }
     response = requests.get(f'{domain}/API/files/v1/assets/{asset_id}/proxies/{proxies_id}/', headers=headers)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response["name"],response["url"]
 
@@ -532,12 +551,12 @@ if __name__ == '__main__':
 
     config_map = loadConfigurationMap(args.config)
 
-    config_map = {
-    "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
-    "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
-    "name": "SDNA_AZURE",
-    "method": "AZURE"
-}
+#     config_map = {
+#     "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
+#     "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
+#     "name": "SDNA_AZURE",
+#     "method": "AZURE"
+# }
     
     params_map = {}
     params_map["foldername"] = args.foldername
@@ -604,6 +623,7 @@ if __name__ == '__main__':
                 response = file_status_update(asset_id, file_id)
                 if response.status_code != 200:
                     print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+                    exit(1)
                 print("File Upload Succesfully")
                 exit(0)
             else:
@@ -619,6 +639,7 @@ if __name__ == '__main__':
                 response = file_status_update(asset_id, file_id)
                 if response.status_code != 200:
                     print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+                    exit(1)
                 print("File Upload Succesfully")
                 exit(0)
             else:
@@ -633,6 +654,7 @@ if __name__ == '__main__':
                 response = file_status_update(asset_id, file_id)
                 if response.status_code != 200:
                     print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+                    exit(1)
                 print("File Upload Succesfully")
                 exit(0)
             else:
@@ -642,11 +664,11 @@ if __name__ == '__main__':
         elif storage_method == "AZURE":
             upload_url, file_id = get_upload_url(asset_id, file_name, file_size, fileset_id, storage_id, format_id,upload_path)
             upload_code = upload_file_azure(upload_url, file_path)
-            print(upload_code)
             if upload_code.status_code == 200:
                 response = file_status_update(asset_id, file_id)
                 if response.status_code != 200:
                     print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+                    exit(1)
                 print("File Upload Succesfully")
                 exit(0)
             else:

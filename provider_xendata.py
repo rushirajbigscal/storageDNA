@@ -21,7 +21,8 @@ def GetRequestStatus(cloudConfigDetails, requestId):
     print (f'In GetRequestStatus - URL = {url}, headers = {headers}')
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response
 
@@ -36,7 +37,8 @@ def GetAllObjects(cloudConfigDetails,recursive=None):
     print (f'In GetAllObjects - URL = {url}, params = {params}')
     response = requests.get(url, params=params)
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}, Error - {response.text}"
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
     response = response.json()
     return response
 
@@ -154,10 +156,10 @@ if __name__ == '__main__':
     target_path = args.target
     folder_name = args.foldername
 
-    # config_map = loadConfigurationMap(args.config)
-    config_map = {'hostname': '192.168.1.172',
-                         'port': 8000 
-                }
+    config_map = loadConfigurationMap(args.config)
+    # config_map = {'hostname': '192.168.1.172',
+    #                      'port': 8000 
+    #             }
 
     params_map = {}
     params_map["foldername"] = args.foldername

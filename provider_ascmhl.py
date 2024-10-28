@@ -11,7 +11,7 @@ def generate_mhl_file(source_folder):
         'ascmhl','create',
         f"{source_folder}"
     ]
-    result = subprocess.run(command)
+    result = subprocess.run(command,capture_output=True)
     if result.returncode != 0:
         print(f"Error while generate mhl file: {result.stderr}")
         return False
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     params_map["policyfile"] = args.policyfile
 
     if mode == 'actions':
-        print('upload,browse,download,list')
+        print('list')
         exit(0)
 
     if mode == 'list':
@@ -189,14 +189,13 @@ if __name__ == "__main__":
                     print("Faild to genrate object dict.")
             else:
                 print("Faild to create an mhl xml file.")
-        if objects_dict and target_path:
-            generate_xml_from_file_objects(objects_dict, target_path)
-            print(f"Generated XML file: {target_path}")
-            exit(0)
-        else:
-            print("Failed to generate XML file.")
-            exit(1)
-            
+            if objects_dict and target_path:
+                generate_xml_from_file_objects(objects_dict, target_path)
+                print(f"Generated XML file: {target_path}")
+                exit(0)
+            else:
+                print("Failed to generate XML file.")
+                exit(1)
     else:
         print(f'Unsupported mode {mode}')
         exit(1)
