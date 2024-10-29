@@ -57,11 +57,11 @@ def data_export(filter_value, path_value, recursive, output_file, status_file):
             
 @app.route('/')
 def index():
-    return "Hello from StorageDNA Export Services Engine!"
+    return "Hello from StorageDNA Export Services Engine!",200
 
 @app.route('/xen/')
 def xen_info():
-    return "XenData Export Services. Params include filter(string), path(relative string), recursive(boolean)"
+    return "XenData Export Services. Params include filter(string), path(relative string), recursive(boolean)",200
 
 @app.route('/xen/export/', methods=['GET'])
 def xen_export():
@@ -85,7 +85,7 @@ def xen_export():
         "path": path_value,
         "recursive": recursive
     }
-    return jsonify({'requestParams': data, 'requestId': req_uuid}), 202
+    return jsonify({'requestParams': data, 'requestId': req_uuid}), 200
 
 @app.route('/xen/export/<req_uuid>/', methods=['GET'])
 def xen_export_status(req_uuid):
@@ -108,8 +108,8 @@ def xen_export_status(req_uuid):
         with open(export_file_path, 'r') as csvfile:
             csvreader = csv.DictReader(csvfile, delimiter='|')
             data['requestResults'] = [row for row in csvreader]
-    
-    return jsonify(data)
+
+    return jsonify(data), 200
 
 if __name__ == '__main__':
     port = get_registry_port()

@@ -7,7 +7,6 @@ import fnmatch
 import time
 import dateutil.parser as dateparser
 from datetime import datetime
-from action_functions import *
 
 def open_csv_file(given_filename):
     file_given = open(given_filename,"w")
@@ -66,6 +65,14 @@ def send_progress(totals, request_id):
 def serialize_datetime(obj): 
     if isinstance(obj, datetime): 
         return f'{obj.isoformat()}.000Z'
+
+def load_jsonfile(file_path):
+    if os.path.isfile(file_path):
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    else:
+        print(f"Json file {file_path} not found.")
+        return None
 
 def process_files(args):
     script_json_file = load_jsonfile(args.script_json_file)

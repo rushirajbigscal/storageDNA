@@ -1,0 +1,16 @@
+Type:ANY
+filename|startwith|CPCT
+filename|endswith|.wav
+filename|contains|Kit
+filename|matches|*Kit*
+filename|doesnotmatch|*j65vh*
+
+filepath|contains|SAMPLES
+filepath|matches|*SAMPLES*
+filepath|doesnotmatch|*j65vh*
+
+size|morethan|20     
+size|lessthan|184485251231656465  
+
+mtime|morethan|2382        
+mtime|lessthan|144671021189945

@@ -1,0 +1,16 @@
+Type:ANY
+filename|startwith|Fi
+filename|endswith|.doc
+filename|contains|le
+filename|matches|*le*
+filename|doesnotmatch|*jml*
+
+filepath|contains|workspaceA
+filepath|matches|*workspaceA*
+filepath|doesnotmatch|*jim*
+
+size|morethan|20     
+size|lessthan|1844852   
+
+mtime|morethan|2382        
+mtime|lessthan|281822
