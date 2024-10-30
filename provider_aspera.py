@@ -7,7 +7,15 @@ import argparse
 from action_functions import *
 
 
-def browse_folder(workspace,source_folder):
+def aoc_command_to_str(command, filename):
+    
+    command_listed = '\" \"'.join(command)
+    command_exec=f'\"{command_listed}\"'
+    f = open(filename, "a")
+    f.write(f'{command_listed}\n')
+    f.close()
+
+def browse_folder(workspace,source_folder, logging_dict):
     command = [
         'ascli', 'aoc', 'files',
         f'--workspace={workspace}',
@@ -15,10 +23,36 @@ def browse_folder(workspace,source_folder):
         '--fields=name,type',
         '--format=csv'
     ]
-    result = subprocess.run(command, capture_output=True).stdout.decode('utf-8')
-    csv_output = result.strip().split('\n')
+    result = subprocess.run(command, capture_output=True)
+    if result.returncode != 0:
+        if logging_dict["logging_level"] > 0:
+            aoc_command_to_str(command, logging_dict["logging_error_filename"])
+    elif logging_dict["logging_level"] > 1:
+            aoc_command_to_str(command, logging_dict["logging_filename"])
+    csv_output = result.stdout.decode('utf-8').strip().split('\n')
     return csv_output
 
+def create_folder(target_folder):
+
+    mkdir_command = [
+        'ascli', 'aoc', 'files',
+        f'--workspace={workspace}',
+        'mkdir', target_path
+    ]
+    
+    mkdir_process = subprocess.run(mkdir_command, capture_output=True)
+    if mkdir_process.returncode != 0:
+        result_err = str(mkdir_process.stderr)
+        if not "already exists" in result_err:
+            if logging_dict["logging_level"] > 0:
+                aoc_command_to_str(mkdir_command, logging_dict["logging_error_filename"])
+            print(f"Error while creating remote folder: {mkdir_process.stderr} {mkdir_process.returncode}")
+            return False
+
+    if logging_dict["logging_level"] > 1:
+        aoc_command_to_str(mkdir_command, logging_dict["logging_filename"])
+
+    return True
 
 def scan_files(param_map):
     workspace = get_parameter_value("workspace")
@@ -31,8 +65,17 @@ def scan_files(param_map):
         '--fields=size,path,modified_time,type',
         '--format=csv'
     ]
-    result = subprocess.run(command, capture_output=True).stdout.decode('utf-8')
-    csv_output = result.strip().split('\n')
+    result = subprocess.run(command, capture_output=True)
+    if result.returncode != 0:
+        if logging_dict["logging_level"] > 0:
+            aoc_command_to_str(command, logging_dict["logging_error_filename"])
+        print(f'Scan failed with exit code: {result.returncode}')
+        exit(1)
+    elif logging_dict["logging_level"] > 1:
+            aoc_command_to_str(command, logging_dict["logging_filename"])
+                
+    result_text = result.stdout.decode('utf-8')
+    csv_output = result_text.strip().split('\n')
     return csv_output
 
 def upload_file(workspace,target_path,file_path):
@@ -61,9 +104,13 @@ def upload_file(workspace,target_path,file_path):
 
     upload_process = subprocess.run(upload_command, capture_output=True)
     if upload_process.returncode != 0:
+        if logging_dict["logging_level"] > 0:
+            aoc_command_to_str(upload_command, logging_dict["logging_error_filename"])
         result_err = str(upload_process.stderr)
         print(f"Error while uploading file to remote folder: {result_err}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        aoc_command_to_str(upload_command, logging_dict["logging_filename"])
 
     print(f"File '{file_path}' uploaded to '{target_path}' successfully.")
     return True
@@ -80,9 +127,13 @@ def download_file(workspace, file_path, target_path):
 
     download_process = subprocess.run(command, capture_output = True)
     if download_process.returncode != 0:
+        if logging_dict["logging_level"] > 0:
+            aoc_command_to_str(command, logging_dict["logging_error_filename"])
         result_err = str(download_process.stderr)
         print(f"Error while downloading file to local folder: {result_err}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        aoc_command_to_str(command, logging_dict["logging_filename"])
 
     print(f"File '{file_path}' downloaded to '{target_path}' successfully.")
     return True
@@ -181,7 +232,7 @@ def GetObjectDict(files_list : list, params):
             file_object["atime"] = f'{mtime_epoch_seconds}'
             file_object["owner"] = "0"
             file_object["group"] = "0"
-            file_object["index"] = "0"
+            file_object["index"] = params["indexid"]
             
             if file_object["type"] == "F_REG":
                 scanned_files += 1
@@ -206,6 +257,9 @@ if __name__ == "__main__":
     parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
     parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
     parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
+    parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
 
     args = parser.parse_args()
     mode = args.mode
@@ -213,6 +267,7 @@ if __name__ == "__main__":
     target_path = args.target
     folder_name = args.foldername
 
+    logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
     config_map = loadConfigurationMap(args.config)
 
     params_map = {}
@@ -222,6 +277,9 @@ if __name__ == "__main__":
     params_map["filtertype"] = args.filtertype
     params_map["filterfile"] = args.filterfile
     params_map["policyfile"] = args.policyfile
+    params_map["indexid" ] = args.indexid
+    params_map["jobguid"] = args.jobguid
+    params_map["jobid"] = args.jobid
 
     for key in config_map:
         if key in params_map:
@@ -230,14 +288,14 @@ if __name__ == "__main__":
             params_map[key] = config_map[key]
 
     if mode == 'actions':
-        print('upload,browse,download,list')
+        print('upload,browse,download,list,createfolder')
         exit(0)
 
     workspace = get_parameter_value("workspace")
 
     if mode == 'list':
-        if target_path is None or folder_name is None:
-             print('Target path (-t <targetpath> ) and folder name (-f <foldername> ) options are required for list')
+        if target_path is None or folder_name is None or args.indexid is None:
+             print('Target path (-t <targetpath> ) and folder name (-f <foldername> ) -in <index>  options are required for list')
              exit(1)
         files_list = scan_files(params_map)
         objects_dict = GetObjectDict(files_list, params_map)
@@ -255,7 +313,7 @@ if __name__ == "__main__":
              exit(2)
 
         folders_list = []
-        folders = browse_folder(workspace, folder_name)
+        folders = browse_folder(workspace, folder_name,logging_dict)
         for folder_data in folders:
             folder = folder_data.strip().split(",")
             if (len(folder) > 1):
@@ -276,6 +334,12 @@ if __name__ == "__main__":
 
     elif mode == "download":
         if download_file(workspace,file_path,target_path) == False:
+            exit(1)
+        else:
+            exit(0)
+
+    elif mode == "createfolder":
+        if not create_folder(target_path):
             exit(1)
         else:
             exit(0)

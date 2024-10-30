@@ -540,6 +540,9 @@ if __name__ == '__main__':
     parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
     parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
     parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
+    parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
 
     args = parser.parse_args()
     mode = args.mode
@@ -549,14 +552,15 @@ if __name__ == '__main__':
     tmp_id = args.tmp_id
     target_path = args.target
 
-    config_map = loadConfigurationMap(args.config)
+    logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
+    # config_map = loadConfigurationMap(args.config)
 
-#     config_map = {
-#     "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
-#     "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
-#     "name": "SDNA_AZURE",
-#     "method": "AZURE"
-# }
+    config_map = {
+    "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
+    "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
+    "name": "SDNA_AZURE",
+    "method": "AZURE"
+}
     
     params_map = {}
     params_map["foldername"] = args.foldername
@@ -565,6 +569,9 @@ if __name__ == '__main__':
     params_map["filtertype"] = args.filtertype
     params_map["filterfile"] = args.filterfile
     params_map["policyfile"] = args.policyfile
+    params_map["indexid" ] = args.indexid
+    params_map["jobguid"] = args.jobguid
+    params_map["jobid"] = args.jobid
 
     for key in config_map:
         if key in params_map:
@@ -573,12 +580,12 @@ if __name__ == '__main__':
             params_map[key] = config_map[key]
 
     if mode == 'actions':
-        print('upload,browse,download,list')
+        print('upload,browse,download,list,createfolder')
         exit(0)
 
     if mode == 'list':
         if target_path is None:
-            print('Target path (-t <targetpath> ) option are required for list')
+            print('Target path (-t <targetpath> ) -in <index> options are required for list')
             exit(1)
         if collectionid:
             collection = [{'id':collectionid}]
