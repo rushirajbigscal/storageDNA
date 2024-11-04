@@ -3,6 +3,7 @@ import json
 import sys
 import time
 import plistlib
+import pathlib
 import xml.etree.ElementTree as ET
 import glob
 from configparser import ConfigParser
@@ -322,6 +323,57 @@ def restore_ticket_to_csv(ticket_path, current_time):
             file.write(f"{index_id},{target_path}\n")
     file.close()
     return csv_file
+
+def loadLoggingDict(logging_suffix, job_guid):
+
+    logging_dict = {}
+    logging_dict["level"] = 0
+
+    if os.path.isdir("/opt/sdna/bin/"):
+        DNA_CLIENT_SERVICES = '/etc/StorageDNA/DNAClientServices.conf'
+    else:
+        DNA_CLIENT_SERVICES = '/Library/Preferences/com.storagedna.DNAClientServices.plist'
+    DNA_CLIENT_SERVICES = "D:/storageDNA/DNAClientServices.conf"
+
+    if not os.path.exists(DNA_CLIENT_SERVICES):
+        print(f'Unable to find configuration file: {DNA_CLIENT_SERVICES}')
+        return logging_dict;
+
+    logging_folder = ""
+    logging_level = 0
+    logging_available = False
+
+    if os.path.isdir("D:/storageDNA"):
+        config_parser = ConfigParser()
+        config_parser.read(DNA_CLIENT_SERVICES)
+        if config_parser.has_section('General'):
+            section_info = config_parser['General']
+            if config_parser.has_option('General','CommandLoggingLevel') and config_parser.has_option('General','CommandLoggingPath'):
+                logging_level = int(section_info['CommandLoggingLevel'])
+                logging_folder = section_info['CommandLoggingPath']
+                if logging_level > 0:
+                    logging_available = True
+
+    else:
+        with open(DNA_CLIENT_SERVICES, 'rb') as fp:
+            print(fp)
+            my_plist = plistlib.load(fp)
+            logging_level = int(my_plist["CommandLoggingLevel"])
+            logging_folder = my_plist['CommandLoggingPath']
+                
+    if logging_available == True:
+        logging_folder=f'{logging_folder}/{job_guid}'
+        if not os.path.exists(logging_folder):
+            pathlib.Path(logging_folder).mkdir(parents=True, exist_ok=True)
+        current_date=int(time.time())
+        logging_file_name = f'{logging_folder}/{current_date}.{logging_suffix}'
+        logging_file_error_name = f'{logging_folder}/{current_date}_ERROR.{logging_suffix}'
+        logging_dict["logging_level"] = logging_level
+        logging_dict["logging_filename"] = logging_file_name
+        logging_dict["logging_error_filename"] = logging_file_error_name
+
+    return logging_dict
+
 
 def loadConfigurationMap(config_name):
 

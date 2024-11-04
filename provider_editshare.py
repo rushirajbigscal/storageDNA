@@ -5,40 +5,49 @@ from datetime import datetime
 import xml.etree.ElementTree as ET
 import argparse
 from action_functions import *
+import requests
+from urllib import request
+import urllib3
 
-def aoc_command_to_str(command, filename):
-    command_listed = '\" \"'.join(command)
-    command_exec=f'\"{command_listed}\"'
-    f = open(filename, "a")
-    f.write(f'{command_listed}\n')
-    f.close()
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def generate_mhl_file(source_folder,logging_dict):
-    command = [
-        'ascmhl','create',
-        f"{source_folder}"
+def get_download_id(params,file_id):
+    json_body = {
+    "file_id": file_id,
+    "offset": 0
+    }
+
+    # response = requests.post(f"https://{params["hostname"]}:8006/api/v2/transfer",json=json_body)
+    # if response.status_code != 201:
+    #     print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+    #     return False
+    response = [
+        {
+            "expires": "2021-08-18T15:21:57Z",
+            "file_id": "null",
+            "file_path": "folder/Kittens.mov",
+            "file_size_bytes": 8589934592,
+            "mediaspace": "Test",
+            "name": "Kittens",
+            "offset": 0,
+            "transfer": "c838cd8f-93bf-49d4-ab4c-5ff745b01468"
+        }
     ]
-    result = subprocess.run(command,capture_output=True)
-    if result.returncode != 0:
-        if logging_dict["logging_level"] > 0:
-            aoc_command_to_str(command, logging_dict["logging_error_filename"])
-        print(f"Error while generate mhl file: {result.stderr}")
+
+    return response[0]["transfer"]
+
+def download_file(download_id,params):
+    para = {
+        "transfer_id" : download_id
+    }
+
+    response = requests.get(f"https://{params["hostname"]}:8006/api/v2/transfer",params=para)
+    if response.status_code != 200:
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
-    elif logging_dict["logging_level"] > 1:
-        aoc_command_to_str(command, logging_dict["logging_filename"])
     return True
 
-def get_mhl_file_path(file_path):
-    namespace = {'mhl': 'urn:ASC:MHL:DIRECTORY:v2.0'}
-    tree = ET.parse(file_path)
-    root = tree.getroot()
-    mhl_path = root.find('.//mhl:path', namespace)
-    if mhl_path.text:
-        return f"{os.path.join("ascmhl",mhl_path.text)}"
-    else:
-        return False
-
-def GetObjectDict(mhl_file_path,params):
+def GetObjectDict(data_list,params):
     scanned_files = 0
     selected_count = 0
     output = {}
@@ -77,24 +86,6 @@ def GetObjectDict(mhl_file_path,params):
     if not policy_file is None:
         policy_dict = load_policies_from_file(policy_file)
 
-    data_list = []
-    namespace = {'mhl': 'urn:ASC:MHL:v2.0'}
-    tree = ET.parse(mhl_file_path)
-    root = tree.getroot()
-    for data in root.findall(".//mhl:hash", namespace):
-        file_path = data.find("mhl:path", namespace).text
-        file_size = data.find("mhl:path", namespace).get("size")
-        file_size = file_size if file_size else "0"
-        last_modification_date = data.find("mhl:path", namespace).get("lastmodificationdate")
-        checksum = data.find("mhl:xxh128", namespace).text
-        data_list.append({"file_path":file_path,"file_size":file_size,"last_modification_date":last_modification_date,"checksum":checksum})
-
-    for data in root.findall(".//mhl:directoryhash", namespace):
-        file_path = data.find("mhl:path", namespace).text
-        file_size = "0"
-        last_modification_date = data.find("mhl:path", namespace).get("lastmodificationdate")
-        checksum = "0"
-        data_list.append({"file_path":file_path,"file_size":file_size,"last_modification_date":last_modification_date,"checksum":checksum})
     
     for data in data_list:
         mtime_struct = datetime.strptime(data["last_modification_date"].split("+")[0], "%Y-%m-%dT%H:%M:%S")
@@ -139,7 +130,7 @@ def GetObjectDict(mhl_file_path,params):
             file_object["atime"] = f'{mtime_epoch_seconds}'
             file_object["owner"] = "0"
             file_object["group"] = "0"
-            file_object["index"] = params["indexid"]
+            file_object["index"] = "0"
             
             if file_object["type"] == "F_REG":
                 scanned_files += 1
@@ -157,20 +148,25 @@ def GetObjectDict(mhl_file_path,params):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--mode', required = True, help = 'list,actions')
+    parser.add_argument('-c', '--config', required = True, help = 'Configuration name')
+    parser.add_argument('-m', '--mode', required = True, help = 'upload,browse,download,list,actions')
+    parser.add_argument('-s','--source',help='source file')
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-f','--foldername',help='folder_name_to_create')
+    parser.add_argument('-tmp','--tmp_id',help='tmp_id')
     parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
     parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
     parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
-    parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
-    parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
-    parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
 
     args = parser.parse_args()
     mode = args.mode
     target_path = args.target
     folder_name = args.foldername
+
+    # config_map = loadConfigurationMap(args.config)
+    config_map = {'hostname': '192.168.1.172',
+                         'port': 8000 
+                }
 
     params_map = {}
     params_map["foldername"] = args.foldername
@@ -178,42 +174,34 @@ if __name__ == "__main__":
     params_map["filtertype"] = args.filtertype
     params_map["filterfile"] = args.filterfile
     params_map["policyfile"] = args.policyfile
-    params_map["indexid" ] = args.indexid
-    params_map["jobguid"] = args.jobguid
-    params_map["jobid"] = args.jobid
 
-    logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
+
+    file_id = 111
+    for key in config_map:
+        if key in params_map:
+            print(f'Skipping existing key {key}')
+        else:
+            params_map[key] = config_map[key]
 
     if mode == 'actions':
-        print('list,actions')
+        print('upload,browse,download,list')
         exit(0)
 
     if mode == 'list':
-        if target_path is None or folder_name is None or args.indexid is None:
-            print('Target path (-t <targetpath> ) and folder name (-f <foldername> ) -in <index>  options are required for list')
-            exit(1)
-        if os.path.isdir(folder_name):
-            mhl_path = os.path.join(folder_name,"ascmhl")
-            if os.path.exists(mhl_path):
-                shutil.rmtree(mhl_path)
-            if generate_mhl_file(folder_name,logging_dict):
-                file_path = "ascmhl/ascmhl_chain.xml"
-                file_path = os.path.join(folder_name,file_path)
-            if os.path.exists(file_path):
-                if get_mhl_file_path(file_path):
-                    mhl_file_path = os.path.join(folder_name,get_mhl_file_path(file_path))
-                    objects_dict = GetObjectDict(mhl_file_path,params_map)
-                else:
-                    print("Faild to genrate object dict.")
-            else:
-                print("Faild to create an mhl xml file.")
-            if objects_dict and target_path:
-                generate_xml_from_file_objects(objects_dict, target_path)
-                print(f"Generated XML file: {target_path}")
-                exit(0)
-            else:
-                print("Failed to generate XML file.")
-                exit(1)
+        pass
+
+    elif mode == 'upload':
+        pass
+        
+    elif mode == 'browse':
+        pass
+
+    elif mode == "download":
+        download_id = get_download_id(params_map,file_id)
+        if download_file(download_id,params_map):
+            print(f"File Downloaded {target_path}")
+        
+
     else:
         print(f'Unsupported mode {mode}')
         exit(1)

@@ -14,31 +14,41 @@ VALID_MODES = ['upload', 'download', 'list','browse']
 
 END_STATES = ['Success', 'Failed']
 
+def strdata_to_logging_file(str_data, filename):
+    f = open(filename, "a")
+    f.write(f'{str_data}\n')
+    f.close()
 
-def GetRequestStatus(cloudConfigDetails, requestId):
+
+def GetRequestStatus(cloudConfigDetails, requestId,logging_dict):
     url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/xen/export/{requestId}"
     headers = { 'Content-Type': 'application/json; charset=utf-8'}
-    print (f'In GetRequestStatus - URL = {url}, headers = {headers}')
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response
 
 
-def GetAllObjects(cloudConfigDetails,recursive=None):
+def GetAllObjects(cloudConfigDetails,logging_dict,recursive=None):
     url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/xen/export"
     params = {
             'path': cloudConfigDetails["foldername"],
             'recursive': recursive
             }
-    
-    print (f'In GetAllObjects - URL = {url}, params = {params}')
     response = requests.get(url, params=params)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response
 
@@ -125,7 +135,7 @@ def GetObjectDict(data : dict,params):
             file_object["atime"] = f'{atime_epoch_seconds}'
             file_object["owner"] = "0"
             file_object["group"] = "0"
-            file_object["index"] = "0"
+            file_object["index"] = params["indexid"]
             
             if file_object["type"] == "F_REG":
                 scanned_files += 1
@@ -144,22 +154,26 @@ def GetObjectDict(data : dict,params):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required = True, help = 'Configuration name')
-    parser.add_argument('-m', '--mode', required = True, help = 'upload,browse,download,list,actions')
+    parser.add_argument('-m', '--mode', required = True, help = 'browse,list,actions')
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-f','--foldername',help='folder_name_to_create')
     parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
     parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
     parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
+    parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
     
     args = parser.parse_args()
     mode = args.mode
     target_path = args.target
     folder_name = args.foldername
 
-    config_map = loadConfigurationMap(args.config)
-    # config_map = {'hostname': '192.168.1.172',
-    #                      'port': 8000 
-    #             }
+    logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
+    # config_map = loadConfigurationMap(args.config)
+    config_map = {'hostname': '192.168.1.172',
+                         'port': 8000 
+                }
 
     params_map = {}
     params_map["foldername"] = args.foldername
@@ -167,6 +181,9 @@ if __name__ == '__main__':
     params_map["filtertype"] = args.filtertype
     params_map["filterfile"] = args.filterfile
     params_map["policyfile"] = args.policyfile
+    params_map["indexid" ] = args.indexid
+    params_map["jobguid"] = args.jobguid
+    params_map["jobid"] = args.jobid
 
     for key in config_map:
         if key in params_map:
@@ -179,11 +196,11 @@ if __name__ == '__main__':
         exit(0)
 
     if mode == 'list':
-        if target_path is None or folder_name is None:
-            print('Target path (-t <targetpath> ) and folder name (-f <foldername> ) options are required for list')
+        if target_path is None or folder_name is None or args.indexid is None:
+            print('Target path (-t <targetpath> ) and folder name (-f <foldername> ) -in <index>  options are required for list')
             exit(1)
 
-        all_objs_list = GetAllObjects(params_map,recursive='true')
+        all_objs_list = GetAllObjects(params_map,logging_dict,recursive='true')
         print(all_objs_list)
         if not all_objs_list['requestId']:
             exit(-1)
@@ -191,7 +208,7 @@ if __name__ == '__main__':
         requestId = all_objs_list['requestId'] 
         state_name = ""
         while state_name not in END_STATES:
-            listing_json_responce = GetRequestStatus(params_map,requestId)
+            listing_json_responce = GetRequestStatus(params_map,requestId,logging_dict)
             state_name = listing_json_responce['requestStatus']
             print(state_name)
             time.sleep(5)
