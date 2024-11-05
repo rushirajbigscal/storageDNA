@@ -20,8 +20,8 @@ def strdata_to_logging_file(str_data, filename):
     f.close()
 
 
-def GetRequestStatus(cloudConfigDetails, requestId,logging_dict):
-    url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/xen/export/{requestId}"
+def GetRequestStatus(requestId):
+    url = f"http://{params_map['hostname']}:{params_map['port']}/xen/export/{requestId}"
     headers = { 'Content-Type': 'application/json; charset=utf-8'}
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
@@ -35,10 +35,10 @@ def GetRequestStatus(cloudConfigDetails, requestId,logging_dict):
     return response
 
 
-def GetAllObjects(cloudConfigDetails,logging_dict,recursive=None):
-    url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/xen/export"
+def GetAllObjects(folder_name,recursive=None):
+    url = f"http://{params_map['hostname']}:{params_map['port']}/xen/export"
     params = {
-            'path': cloudConfigDetails["foldername"],
+            'path': folder_name,
             'recursive': recursive
             }
     response = requests.get(url, params=params)
@@ -200,7 +200,7 @@ if __name__ == '__main__':
             print('Target path (-t <targetpath> ) and folder name (-f <foldername> ) -in <index>  options are required for list')
             exit(1)
 
-        all_objs_list = GetAllObjects(params_map,logging_dict,recursive='true')
+        all_objs_list = GetAllObjects(folder_name,recursive='true')
         print(all_objs_list)
         if not all_objs_list['requestId']:
             exit(-1)
@@ -208,7 +208,7 @@ if __name__ == '__main__':
         requestId = all_objs_list['requestId'] 
         state_name = ""
         while state_name not in END_STATES:
-            listing_json_responce = GetRequestStatus(params_map,requestId,logging_dict)
+            listing_json_responce = GetRequestStatus(requestId)
             state_name = listing_json_responce['requestStatus']
             print(state_name)
             time.sleep(5)
@@ -229,11 +229,11 @@ if __name__ == '__main__':
             exit(1)
 
         folders = set()
-        all_objs_list = GetAllObjects(params_map,recursive='false')
+        all_objs_list = GetAllObjects(folder_name,recursive='false')
         requestId = all_objs_list['requestId'] 
         state_name = ""
         while state_name not in END_STATES:
-            data = GetRequestStatus(params_map,requestId)
+            data = GetRequestStatus(requestId)
             state_name = data['requestStatus']
             print(state_name)
             time.sleep(1)
