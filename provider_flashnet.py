@@ -157,35 +157,6 @@ if __name__ == '__main__':
     folder_path = args.foldername
     guid = args.tmp_id
 
-    '''
-    config_name = args.configname
-    
-    cloudTargetPath = ''
-    
-    if is_linux == 1:
-        config_parser = ConfigParser()
-        config_parser.read(DNA_CLIENT_SERVICES)
-        if config_parser.has_section('General') and config_parser.has_option('General','cloudconfigfolder'):
-            section_info = config_parser['General']
-            cloudTargetPath = section_info['cloudconfigfolder'] + "/cloud_targets.conf"
-    else:
-        with open(DNA_CLIENT_SERVICES, 'rb') as fp:
-            my_plist = plistlib.load(fp)
-            cloudTargetPath = my_plist["CloudConfigFolder"] + "/cloud_targets.conf"
-            
-    if not os.path.exists(cloudTargetPath):
-        err= "Unable to find cloud target file: " + cloudTargetPath
-        sys.exit(err)
-
-    config_parser = ConfigParser()
-    config_parser.read(cloudTargetPath)
-    if not config_name in config_parser.sections():
-        err = 'Unable to find cloud configuration: ' + config_name
-        sys.exit(err)
-        
-    cloud_config_info = config_parser[config_name]
-    '''
-
     cloud_config_info = {
         "hostname" : "192.168.1.172",
         "port" : "8000",
