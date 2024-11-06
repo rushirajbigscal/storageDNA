@@ -170,10 +170,7 @@ if __name__ == '__main__':
     folder_name = args.foldername
 
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
-    # config_map = loadConfigurationMap(args.config)
-    config_map = {'hostname': '192.168.1.172',
-                         'port': 8000 
-                }
+    config_map = loadConfigurationMap(args.config)
 
     params_map = {}
     params_map["foldername"] = args.foldername

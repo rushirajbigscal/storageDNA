@@ -598,7 +598,7 @@ def GetObjectDict(files_list : list,params):
                 file_object["atime"] = f'{atime_epoch_seconds}'
                 file_object["owner"] = "0"
                 file_object["group"] = "0"
-                file_object["index"] = "0"
+                file_object["index"] = params["indexid"]
                 
                 if file_object["type"] == "F_REG":
                     scanned_files += 1
@@ -651,7 +651,7 @@ def GetObjectDict(files_list : list,params):
                 file_object["atime"] = f'{atime_epoch_seconds}'
                 file_object["owner"] = "0"
                 file_object["group"] = "0"
-                file_object["index"] = "0"
+                file_object["index"] = params["indexid"]
                 
                 if file_object["type"] == "F_REG":
                     scanned_files += 1
@@ -692,15 +692,8 @@ if __name__ == '__main__':
     target_path = args.target
 
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
-    # config_map = loadConfigurationMap(args.config)
-
-    config_map = {
-    "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
-    "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
-    "name": "SDNA_GCS",
-    "method": "GCS"
-}
-    
+    config_map = loadConfigurationMap(args.config)
+ 
     params_map = {}
     params_map["foldername"] = args.foldername
     params_map["source"] = args.source

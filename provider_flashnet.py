@@ -18,7 +18,7 @@ def get_files_data():
     response = requests.get(url, params=params).json()
     return response["Results"]
 
-def archive_file_request(file_path):
+def upload_file_request(file_path):
     url = f"http://{params_map["hostname"]}:{params_map["port"]}/flashnet/api/v1/assets/"
     payload = {
         "Caller" : params_map["Caller"],
@@ -255,7 +255,7 @@ if __name__ == '__main__':
         print("GOOD")
 
     elif mode == 'upload':
-        # response = archive_file_request(file_path)
+        # response = upload_file_request(file_path)
         response = {
             "Success":"true",
             "Message":"Successfully sent to archive as request id 308",

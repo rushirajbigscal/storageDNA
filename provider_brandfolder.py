@@ -376,7 +376,7 @@ def GetObjectDict(files_list : list,params):
                 file_object["atime"] = f'{atime_epoch_seconds}'
                 file_object["owner"] = "0"
                 file_object["group"] = "0"
-                file_object["index"] = "0"
+                file_object["index"] = params["indexid"]
                 
                 if file_object["type"] == "F_REG":
                     scanned_files += 1
@@ -425,11 +425,8 @@ if __name__ == '__main__':
     section_id = args.section_id
 
 
-    # config_map = loadConfigurationMap(args.config)
+    config_map = loadConfigurationMap(args.config)
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
-    config_map = {
-                    "Bearer_key" : "eyJhbGciOiJIUzI1NiJ9.eyJvcmdhbml6YXRpb25fa2V5IjoicGcyeW13LTN1cnpway01d2dzczUiLCJpYXQiOjE3MjgwMjY0MzcsInVzZXJfa2V5IjoiOTMzdG5uY3I2Yng2NDZ4cGNjdDM3cHoiLCJzdXBlcnVzZXIiOmZhbHNlfQ.9PVGOlORzpoMofvkJA9Vffy027QgScNavVAFVvZGedE"
-                }
 
     params_map = {}
     params_map["foldername"] = args.foldername
@@ -457,8 +454,8 @@ if __name__ == '__main__':
     
     if mode == 'list':
         if target_path is None:
-             print('Target path (-t <targetpath> ) option are required for list')
-             exit(1)
+            print('Target path (-t <targetpath>) and -in <index> options are required for list')
+            exit(1)
         files_list = []
         if collectionid:
             collection_id_list = [collectionid]
