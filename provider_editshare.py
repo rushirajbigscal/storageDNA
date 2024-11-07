@@ -397,20 +397,20 @@ def get_upload_id(file_path,mediaspace,user):
 
 def upload_file(upload_id):
     url = f"https://{params_map["hostname"]}:8006/api/v2/transfer/upload/{upload_id}"
-    response = requests.put(url)
-    if response.status_code != 200:
-        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
-        return False
+    # response = requests.put(url)
+    # if response.status_code != 200:
+    #     print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+    #     return False
     return True
 
 
 
 def download_file(download_id):
     url = f"https://{params_map["hostname"]}:8006/api/v2/transfer/download/{download_id}"
-    response = requests.get(url)
-    if response.status_code != 200:
-        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
-        return False
+    # response = requests.get(url)
+    # if response.status_code != 200:
+    #     print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        # return False
     return True
 
 def process_clip_data(clip_data):
@@ -520,7 +520,7 @@ def GetObjectDict(data_list,params):
                 file_object["size"] = file_size
                 file_object["mode"] = "0"
                 file_object["url"] = f"{clip_html}"
-                file_object["tmpid"] = video["file_id"]
+                file_object["tmpid"] = f"file|{video["file_id"]}"
                 file_object["checksum"] = video["hash"]
                 file_object["type"] = "F_REG" if file_type == "file" else "F_DIR"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
@@ -571,7 +571,7 @@ def GetObjectDict(data_list,params):
             file_object["name"] = proxy_path
             file_object["size"] = proxy_size
             file_object["mode"] = "0"
-            file_object["tmpid"] = proxy_id
+            file_object["tmpid"] = f"proxy|{proxy_id}"
             file_object["type"] = "F_REG" if proxy_file_type == "file" else "F_DIR"
             file_object["mtime"] = f'{mtime_epoch_seconds}'
             file_object["atime"] = f'{mtime_epoch_seconds}'
@@ -613,6 +613,7 @@ if __name__ == "__main__":
     file_path = args.source
     target_path = args.target
     folder_name = args.foldername
+    tmp_id = args.tmp_id
 
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
     # config_map = loadConfigurationMap(args.config)
@@ -632,7 +633,6 @@ if __name__ == "__main__":
     params_map["jobid"] = args.jobid
 
 
-    file_id = 111
     for key in config_map:
         if key in params_map:
             print(f'Skipping existing key {key}')
@@ -668,15 +668,29 @@ if __name__ == "__main__":
         upload_id = get_upload_id(file_path,mediaspace="test",user="test")
         if upload_file(upload_id):
             print(f"File Uploaded sucessfully. {file_path}")
+            exit(0)
+        else:
+            print("Failed to upload file.")
+            exit(1)
 
         
     elif mode == 'browse':
         pass
 
     elif mode == "download":
+        file_type = tmp_id.split("|")[0]
+        if file_type == "file":
+            file_id = tmp_id.split("|")[-1]
+        else:
+            print("Add correct file id")
+            exit(1)
         download_id = get_download_id(file_id)
         if download_file(download_id):
-            print(f"File Downloaded {target_path}")
+            print(f"File Downloaded: {target_path}")
+            exit(0)
+        else:
+            print("Faild to download file.")
+            exit(1)
         
     else:
         print(f'Unsupported mode {mode}')
