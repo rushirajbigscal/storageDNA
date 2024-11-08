@@ -284,7 +284,7 @@ if __name__ == '__main__':
     elif mode == "download":
         # response = restore_file_request(guid,target_path)
         response = {
-            "Success": "true",
+            # "Success": "true",
             "Errors": [],
             "RID": 297,
             "RunState": 3,
