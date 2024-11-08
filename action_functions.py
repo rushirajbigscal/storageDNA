@@ -379,29 +379,30 @@ def loadConfigurationMap(config_name):
 
     config_map = {}
 
-    is_linux = 0
-    if os.path.isdir("/opt/sdna/bin/"):
-        is_linux = 1
-    if is_linux == 1:
-        DNA_CLIENT_SERVICES = '/etc/StorageDNA/DNAClientServices.conf'
-    else:
-        DNA_CLIENT_SERVICES = '/Library/Preferences/com.storagedna.DNAClientServices.plist'
+    # is_linux = 0
+    # if os.path.isdir("/opt/sdna/bin/"):
+    #     is_linux = 1
+    # if is_linux == 1:
+    #     DNA_CLIENT_SERVICES = '/etc/StorageDNA/DNAClientServices.conf'
+    # else:
+    #     DNA_CLIENT_SERVICES = '/Library/Preferences/com.storagedna.DNAClientServices.plist'
 
-    if not os.path.exists(DNA_CLIENT_SERVICES):
-        print(f'Unable to find configuration file: {DNA_CLIENT_SERVICES}')
-        return False
+    # if not os.path.exists(DNA_CLIENT_SERVICES):
+    #     print(f'Unable to find configuration file: {DNA_CLIENT_SERVICES}')
+    #     return False
 
-    if is_linux == 1:
-        config_parser = ConfigParser()
-        config_parser.read(DNA_CLIENT_SERVICES)
-        if config_parser.has_section('General') and config_parser.has_option('General','cloudconfigfolder'):
-            section_info = config_parser['General']
-            cloudTargetPath = section_info['cloudconfigfolder'] + "/cloud_targets.conf"
-    else:
-        with open(DNA_CLIENT_SERVICES, 'rb') as fp:
-            my_plist = plistlib.load(fp)
-            cloudTargetPath = my_plist["CloudConfigFolder"] + "/cloud_targets.conf"
-
+    # if is_linux == 1:
+    #     config_parser = ConfigParser()
+    #     config_parser.read(DNA_CLIENT_SERVICES)
+    #     if config_parser.has_section('General') and config_parser.has_option('General','cloudconfigfolder'):
+    #         section_info = config_parser['General']
+    #         cloudTargetPath = section_info['cloudconfigfolder'] + "/cloud_targets.conf"
+    # else:
+    #     with open(DNA_CLIENT_SERVICES, 'rb') as fp:
+    #         my_plist = plistlib.load(fp)
+    #         cloudTargetPath = my_plist["CloudConfigFolder"] + "/cloud_targets.conf"
+    
+    cloudTargetPath = "D:\\storageDNA\\cloud_targets.conf"
     if not os.path.exists(cloudTargetPath):
         err= "Unable to find cloud target file: " + cloudTargetPath
         sys.exit(err)

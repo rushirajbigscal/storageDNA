@@ -11,29 +11,19 @@ VALID_MODES = ['upload', 'download', 'list']
 
 END_STATES = {"5" : "PASSED", "4":"FAILED", "2": "KILLED"}
 
-linux_dir = "/opt/sdna/bin"
-is_linux = 0
-if os.path.isdir(linux_dir):
-    is_linux = 1
-DNA_CLIENT_SERVICES = ''
-if is_linux == 1:    
-    DNA_CLIENT_SERVICES = '/etc/StorageDNA/DNAClientServices.conf'
-    SERVERS_CONF_FILE = "/etc/StorageDNA/Servers.conf"
-else:
-    DNA_CLIENT_SERVICES = '/Library/Preferences/com.storagedna.DNAClientServices.plist'
-    SERVERS_CONF_FILE = "/Library/Preferences/com.storagedna.Servers.plist"
 
 def get_files_data():
-    params = {"caller" : cloud_config_info["Caller"]}
-
-    response = requests.get(f"http://{cloud_config_info["hostname"]}:{cloud_config_info["port"]}/flashnet/api/v1/files/filter/", params=params).json()
+    url = f"http://{params_map["hostname"]}:{params_map["port"]}/flashnet/api/v1/files/filter/"
+    params = {"caller" : params_map["Caller"]}
+    response = requests.get(url, params=params).json()
     return response["Results"]
 
-def archive_file_request(file_path):
+def upload_file_request(file_path):
+    url = f"http://{params_map["hostname"]}:{params_map["port"]}/flashnet/api/v1/assets/"
     payload = {
-        "Caller" : cloud_config_info["Caller"],
+        "Caller" : params_map["Caller"],
         "Priority" : 1,
-        "Target" : cloud_config_info["group_name"],
+        "Target" : params_map["group_name"],
         "VerifyFiles":"true",
         "DeleteFiles":"false",
         "Files" : [
@@ -42,12 +32,13 @@ def archive_file_request(file_path):
             }
         ]
     }
-    response = requests.post(f"http://{cloud_config_info["hostname"]}:{cloud_config_info["port"]}/flashnet/api/v1/assets/", json=payload).json()
+    response = requests.post(url, json=payload).json()
     return response
 
 def restore_file_request(guid,target_path):
+    url = f"http://{params_map["hostname"]}:{params_map["port"]}/flashnet/api/v1/files/"
     payload = {
-        "Caller" : cloud_config_info["Caller"],
+        "Caller" : params_map["Caller"],
         "Priority" : 1,
         "Files" : [
             {
@@ -56,23 +47,43 @@ def restore_file_request(guid,target_path):
             }
         ]
     }
-    response = requests.post(f"http://{cloud_config_info["hostname"]}:{cloud_config_info["port"]}/flashnet/api/v1/files/", json=payload).json()
+    response = requests.post(url, json=payload).json()
     return response
 
 def get_job_status(rid):
-    # response = requests.get(f"http://{cloud_config_info["hostname"]}:{cloud_config_info["port"]}/flashnet/api/v1/jobs/{rid}").json()
+    url = f"http://{params_map["hostname"]}:{params_map["port"]}/flashnet/api/v1/jobs/{rid}"
+    # response = requests.get(url).json()
     response = {"ExitState" : 5}
     return response["ExitState"]
 
-def GetObjectDict(files_list : list):
+def GetObjectDict(files_list : list,params):
     scanned_files = 0
     selected_count = 0
     output = {}
     file_object_list = []
     extensions = []
     total_size = 0
+   
+    if "filtertype" in params:
+        filter_type = params["filtertype"]
+    else:
+        filter_type = None
 
-    '''
+    if "filterfile" in params:
+        filter_file = params["filterfile"]
+    else:
+        filter_file = None
+
+    if "policyfile" in params:
+        policy_file = params["policyfile"]
+    else:
+        policy_file = None
+
+    policy_dict = None
+
+    if filter_type is None or filter_file is None:
+       filter_type = 'none'
+
     if filter_type.lower() != 'none':
         if not os.path.isfile(filter_file):
             print(f"Filter file given: {filter_file} not found.")
@@ -81,17 +92,20 @@ def GetObjectDict(files_list : list):
         with open(filter_file, 'r') as f:
             extensions = [ext.strip() for ext in f.readlines()]
 
-    policy_dict = load_policies_from_file(policy_file)
-    '''
+    if not policy_file is None:
+        policy_dict = load_policies_from_file(policy_file)
 
     for data in files_list:
         mtime_struct = datetime.strptime(data['ArchiveDate'], "%Y-%m-%dT%H:%M:%S")
         atime_struct = datetime.strptime(data['LastRestoreDate'], "%Y-%m-%dT%H:%M:%S")
         mtime_epoch_seconds = int(mtime_struct.timestamp())
         atime_epoch_seconds = int(atime_struct.timestamp())
-        
-        '''
-        if is_dir or filter_type == 'none':
+        file_path = data["FullFileName"]
+        file_name = get_filename(file_path)
+        file_size = data["Size"]
+        file_type = "file" if file_size != "0" else "dir"
+
+        if file_type.lower() != 'file'  or filter_type == 'none':
             include_file = True
         elif len(extensions) == 0:
             continue
@@ -102,32 +116,32 @@ def GetObjectDict(files_list : list):
         if include_file == False:
             continue
 
-        policy_type = policy_dict["type"]
-        policy_entries = policy_dict["entries"]
-        
-        if policy_type == "ERROR":
-            continue
+        if not policy_dict is None:
+            policy_type = policy_dict["type"]
+            policy_entries = policy_dict["entries"]
+            
+            if policy_type == "ERROR":
+                continue
 
-        if policy_type == "NOFILE":
-            include_file = True
+            if policy_type == "NOFILE":
+                include_file = True
 
-        elif include_file and len(policy_entries) > 0:
-            include_file = file_in_policy(policy_dict, file_name, file_parent_path, file_size, mtime_epoch_seconds)
-        '''
+            elif include_file and len(policy_entries) > 0:
+                include_file = file_in_policy(policy_dict, file_name, file_path, file_size, mtime_epoch_seconds)
 
-        include_file = True
+
         file_object = {}
         if include_file == True:
-            file_object["name"] = data["FullFileName"]
-            file_object["size"] = data["Size"]
+            file_object["name"] = file_path
+            file_object["size"] = file_size
             file_object["mode"] = "0"
             file_object["tmpid"] = data["Guid"]
-            file_object["type"] = "F_REG"
+            file_object["type"] = "F_REG" if file_type == "file" else "F_DIR"
             file_object["mtime"] = f'{mtime_epoch_seconds}'
             file_object["atime"] = f'{atime_epoch_seconds}'
             file_object["owner"] = "0"
             file_object["group"] = "0"
-            file_object["index"] = "0"
+            file_object["index"] = params["indexid"]
             
             if file_object["type"] == "F_REG":
                 scanned_files += 1
@@ -144,11 +158,19 @@ def GetObjectDict(files_list : list):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', required = True, help = 'Configuration name')
     parser.add_argument('-m', '--mode', required = True, help = 'upload, download,list,create_folder')
     parser.add_argument('-s','--source',help='source file')
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-f','--foldername',help='folder_name_to_create')
     parser.add_argument('-tmp','--tmp_id',help='tmp_id')
+    parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
+    parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
+    parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
+    parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
+
 
     args = parser.parse_args()
     mode = args.mode
@@ -157,44 +179,38 @@ if __name__ == '__main__':
     folder_path = args.foldername
     guid = args.tmp_id
 
-    '''
-    config_name = args.configname
-    
-    cloudTargetPath = ''
-    
-    if is_linux == 1:
-        config_parser = ConfigParser()
-        config_parser.read(DNA_CLIENT_SERVICES)
-        if config_parser.has_section('General') and config_parser.has_option('General','cloudconfigfolder'):
-            section_info = config_parser['General']
-            cloudTargetPath = section_info['cloudconfigfolder'] + "/cloud_targets.conf"
-    else:
-        with open(DNA_CLIENT_SERVICES, 'rb') as fp:
-            my_plist = plistlib.load(fp)
-            cloudTargetPath = my_plist["CloudConfigFolder"] + "/cloud_targets.conf"
-            
-    if not os.path.exists(cloudTargetPath):
-        err= "Unable to find cloud target file: " + cloudTargetPath
-        sys.exit(err)
-
-    config_parser = ConfigParser()
-    config_parser.read(cloudTargetPath)
-    if not config_name in config_parser.sections():
-        err = 'Unable to find cloud configuration: ' + config_name
-        sys.exit(err)
-        
-    cloud_config_info = config_parser[config_name]
-    '''
-
-    cloud_config_info = {
+    logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
+    # config_map = loadConfigurationMap(args.config)
+    config_map = {
         "hostname" : "192.168.1.172",
         "port" : "8000",
         "Caller" : "Caller_name",
         "group_name" : "group_name"
     }
     
+    params_map = {}
+    params_map["foldername"] = args.foldername
+    params_map["source"] = args.source
+    params_map["target"] = args.target
+    params_map["filtertype"] = args.filtertype
+    params_map["filterfile"] = args.filterfile
+    params_map["policyfile"] = args.policyfile
+    params_map["indexid" ] = args.indexid
+    params_map["jobguid"] = args.jobguid
+    params_map["jobid"] = args.jobid
+
+    for key in config_map:
+        if key in params_map:
+            print(f'Skipping existing key {key}')
+        else:
+            params_map[key] = config_map[key]
+
+    if mode == 'actions':
+        print('upload,download,list')
+        exit(0)
+
     if mode == 'list':
-        # files_list = get_files_data()
+        # files_list = get_files_data(params_map)
         files_list = [
                 {
                 "Guid":"06.jpg",
@@ -229,7 +245,7 @@ if __name__ == '__main__':
                 "MetaData":"null"
                 },
             ]      
-        objects_dict = GetObjectDict(files_list)
+        objects_dict = GetObjectDict(files_list,params_map)
         if objects_dict and file_path:
             generate_xml_from_file_objects(objects_dict, file_path)
             print(f"Generated XML file: {file_path}")
@@ -239,7 +255,7 @@ if __name__ == '__main__':
         print("GOOD")
 
     elif mode == 'upload':
-        # response = archive_file_request(file_path)
+        # response = upload_file_request(file_path)
         response = {
             "Success":"true",
             "Message":"Successfully sent to archive as request id 308",

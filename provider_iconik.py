@@ -16,15 +16,24 @@ file_ids = []
 collection_ids = []
 domain = 'https://app.iconik.io'
 
+def strdata_to_logging_file(str_data, filename):
+    f = open(filename, "a")
+    f.write(f'{str_data}\n')
+    f.close()
+
 def get_call_of_collections():
     url = f"{domain}/API/assets/v1/collections/"
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
-    response = requests.get(url, headers=headers)
+    response = requests.get(f"{domain}/API/assets/v1/collections/", headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])       
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     for collection_id in response['objects']:
         collection_ids.append({"collection_id" : collection_id['id'],"collectionname" : collection_id['title']}) 
@@ -32,24 +41,33 @@ def get_call_of_collections():
 
 def get_call_of_collections_content(collection_id):
     url = f"{domain}/API/assets/v1/collections/{collection_id}/contents"
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response['objects']
 
 def get_storage_id(storage_name,storage_method):
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    url = f'{domain}/API/files/v1/storages/'
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
-    response = requests.get(f'{domain}/API/files/v1/storages/', headers=headers)
+    response = requests.get(url, headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     storage_id = []
     for storage in response["objects"]:
@@ -58,94 +76,129 @@ def get_storage_id(storage_name,storage_method):
     return storage_id[0]
 
 def create_asset_id(file_name,collection_id):
+    url = f'{domain}/API/assets/v1/assets/'
     payload = {"title": file_name,"type":"ASSET","collection_id":collection_id}
     payload_default = {"title": file_name,"type":"ASSET"}
     params  = {"apply_default_acls":"false","apply_collection_acls":"true"}
     params_default  = {"apply_default_acls":"true"}
 
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.post(
-        f'{domain}/API/assets/v1/assets/',
+        url,
         headers=headers,
         json=payload if collection_id else payload_default,
         params=params if collection_id else params_default
     )
     if response.status_code != 201:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response['id'], response['created_by_user']
 
 
 def create_collection(collection_name,collection_id):
+    url = f'{domain}/API/assets/v1/collections/'
     payload = {"title": collection_name,"parent_id":collection_id}
     payload_default = {"title": collection_name}
 
     params  = {"apply_default_acls":"true","restrict_collection_acls":"true"}
 
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.post(
-        f'{domain}/API/assets/v1/collections/', 
+        url, 
         headers=headers, 
         json=payload if collection_id else payload_default,
         params=params if collection_id else None
     )
     if response.status_code != 201:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response['id']
 
 
 def get_filename_from_asset(asset_id):
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    url = f'{domain}/API/assets/v1/assets/{asset_id}/'
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
-    response = requests.get(f'{domain}/API/assets/v1/assets/{asset_id}/', headers=headers)
+    response = requests.get(url, headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["title"]
 
 def add_asset_in_collection(asset_id,collection_id):
+    url = f'{domain}/API/assets/v1/collections/{collection_id}/contents'
     payload = {"object_id":asset_id,"object_type":"assets"}
     params = {"index_immediately":"true"}
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
-    requests.post(f'{domain}/API/assets/v1/collections/{collection_id}/contents', headers=headers, json=payload,params=params)
-    
-def create_format_id(asset_id, user_id):
-    payload = {"user_id": user_id,"name": "ORIGINAL","metadata": [{"internet_media_type": "text/plain"}],"storage_methods": [params_map["method"]]}
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
-               }
-    response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/formats/', headers=headers, json=payload)
+    response = requests.post(url, headers=headers, json=payload,params=params)
     if response.status_code != 201:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
+    return True
+    
+def create_format_id(asset_id, user_id):
+    url = f'{domain}/API/files/v1/assets/{asset_id}/formats/'
+    payload = {"user_id": user_id,"name": "ORIGINAL","metadata": [{"internet_media_type": "text/plain"}],"storage_methods": [params_map["method"]]}
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
+               }
+    response = requests.post(url, headers=headers, json=payload)
+    if response.status_code != 201:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response['id']
 
 def create_fileset_id(asset_id, format_id, file_name, storage_id,upload_path):
+    url = f'{domain}/API/files/v1/assets/{asset_id}/file_sets/'
     payload = {"format_id": format_id,"storage_id": storage_id,"base_dir": upload_path,"name": file_name,"component_ids": []}
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
-    response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/file_sets/', headers=headers, json=payload)
+    response = requests.post(url, headers=headers, json=payload)
     if response.status_code != 201:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response['id']
 
 
 def get_upload_url(asset_id, file_name, file_size, fileset_id, storage_id, format_id,upload_path):
+    url = f'{domain}/API/files/v1/assets/{asset_id}/files/'
     file_info = {
         'original_name': file_name,
         'directory_path': upload_path,
@@ -155,17 +208,22 @@ def get_upload_url(asset_id, file_name, file_size, fileset_id, storage_id, forma
         'file_set_id': fileset_id,
         'format_id': format_id
     }
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
-    response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/files/', headers=headers, json=file_info)
+    response = requests.post(url, headers=headers, json=file_info)
     if response.status_code != 201:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response['upload_url'], response['id']
 
 def get_upload_url_s3(asset_id, file_name, file_size, fileset_id, storage_id, format_id,upload_path):
+    url = f'{domain}/API/files/v1/assets/{asset_id}/files/'
     file_info = {
         'original_name': file_name,
         'directory_path': upload_path,
@@ -175,17 +233,22 @@ def get_upload_url_s3(asset_id, file_name, file_size, fileset_id, storage_id, fo
         'file_set_id': fileset_id,
         'format_id': format_id
     }
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
-    response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/files/', headers=headers, json=file_info)
+    response = requests.post(url, headers=headers, json=file_info)
     if response.status_code != 201:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response['multipart_upload_url'], response['id']
 
 def get_upload_url_b2(asset_id, file_name, file_size, fileset_id, storage_id, format_id,upload_path):
+    url = f'{domain}/API/files/v1/assets/{asset_id}/files/'
     file_info = {
         'original_name': file_name,
         'directory_path': upload_path,
@@ -195,13 +258,17 @@ def get_upload_url_b2(asset_id, file_name, file_size, fileset_id, storage_id, fo
         'file_set_id': fileset_id,
         'format_id': format_id
     }
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
-    response = requests.post(f'{domain}/API/files/v1/assets/{asset_id}/files/', headers=headers, json=file_info)
+    response = requests.post(url, headers=headers, json=file_info)
     if response.status_code != 201:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response['upload_url'], response['id'],response["upload_credentials"]["authorizationToken"],response["upload_filename"]
 
@@ -209,8 +276,12 @@ def get_upload_url_b2(asset_id, file_name, file_size, fileset_id, storage_id, fo
 def get_upload_id_s3(upload_url):
     response = requests.post(upload_url)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(upload_url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(upload_url, logging_dict["logging_filename"])
     root = ET.fromstring(response.text)
     namespace = root.tag.split('}')[0] + '}'
     upload_id = root.find(f'{namespace}UploadId').text
@@ -219,13 +290,17 @@ def get_upload_id_s3(upload_url):
 def get_part_url_s3(asset_id, file_id, upload_id):
     part_url = f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/multipart_url/part/'
     params = {"parts_num": "1", "upload_id": upload_id, "per_page": "100", "page": "1"}
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.get(part_url, headers=headers, params=params)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(part_url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["objects"][0]["url"]
 
@@ -241,6 +316,13 @@ def upload_file_gcs(upload_url, file_path, file_size):
         'x-goog-resumable': 'start',
     }
     resp_JSON = requests.post(upload_url, headers=google_headers)
+    if resp_JSON.status_code != 201:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(upload_url, logging_dict["logging_error_filename"])
+        print(f"Response error. Status - {upload_url.status_code}, Error - {upload_url.text}")
+        return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(upload_url, logging_dict["logging_filename"])
     upload_id = resp_JSON.headers['X-GUploader-Uploadid']
 
     google_headers = {
@@ -251,25 +333,41 @@ def upload_file_gcs(upload_url, file_path, file_size):
     with open(file_path, 'rb') as f:
         full_upload_url = f"{upload_url}&upload_id={upload_id}"
         x = requests.put(full_upload_url, headers=google_headers, data=f)
+        if x.status_code != 200:
+            if logging_dict["logging_level"] > 0:
+                strdata_to_logging_file(full_upload_url, logging_dict["logging_error_filename"])
+            print(f"Response error. Status - {x.status_code}, Error - {x.text}")
+            return False
+        elif logging_dict["logging_level"] > 1:
+            strdata_to_logging_file(full_upload_url, logging_dict["logging_filename"])
         return x
 
 def upload_file_s3(part_url, file_path,upload_id, asset_id, file_id):
     with open(file_path, 'rb') as file:
         response = requests.put(part_url, data=file)
         if response.status_code != 200:
+            if logging_dict["logging_level"] > 0:
+                strdata_to_logging_file(part_url, logging_dict["logging_error_filename"])
             print(f"Response error. Status - {response.status_code}, Error - {response.text}")
             return False
+        elif logging_dict["logging_level"] > 1:
+            strdata_to_logging_file(part_url, logging_dict["logging_filename"])
         etag = response.headers['etag']
+        multipart_url = f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/multipart_url/'
     complete_url_response = requests.get(
-        f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/multipart_url/',
-        headers={"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+        multipart_url,
+        headers={"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                },
         params={"upload_id": upload_id, "type": "complete_url"}
     )
     if complete_url_response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(multipart_url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+            strdata_to_logging_file(multipart_url, logging_dict["logging_filename"])
     complete_url_response =complete_url_response.json()
     complete_url = complete_url_response['complete_url']
     xml_payload = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -282,8 +380,12 @@ def upload_file_s3(part_url, file_path,upload_id, asset_id, file_id):
     headers = {'Content-Type': 'application/xml'}
     response = requests.post(complete_url, data=xml_payload, headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(complete_url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+            strdata_to_logging_file(complete_url, logging_dict["logging_filename"])
     return response
 
 def upload_file_b2(upload_url,authorizationToken,file_path,upload_filename,sha1_of_file):
@@ -296,52 +398,89 @@ def upload_file_b2(upload_url,authorizationToken,file_path,upload_filename,sha1_
     
     with open(file_path, 'rb') as f:
         x = requests.post(upload_url,headers=headers,data=f)
+        if x.status_code != 200:
+            if logging_dict["logging_level"] > 0:
+                strdata_to_logging_file(part_url, logging_dict["logging_error_filename"])
+            print(f"Response error. Status - {x.status_code}, Error - {x.text}")
+            return False
+        elif logging_dict["logging_level"] > 1:
+            strdata_to_logging_file(url, logging_dict["logging_filename"])
         return x
 
 def upload_file_azure(upload_url, file_path):
     headers = { "x-ms-blob-type" : "BlockBlob"}
     with open(file_path, 'rb') as file:
         x = requests.put(upload_url, data=file,headers=headers)
+        if x.status_code != 200:
+            if logging_dict["logging_level"] > 0:
+                strdata_to_logging_file(part_url, logging_dict["logging_error_filename"])
+            print(f"Response error. Status - {x.status_code}, Error - {x.text}")
+            return False
+        elif logging_dict["logging_level"] > 1:
+            strdata_to_logging_file(url, logging_dict["logging_filename"])
         return x
 
 def file_status_update(asset_id, file_id):
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    url = f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/'
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
-    upload_file_status_close = requests.patch(f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/', headers=headers, json={"status": "CLOSED", "progress_processed": 100})
+    upload_file_status_close = requests.patch(url, headers=headers, json={"status": "CLOSED", "progress_processed": 100})
+    if upload_file_status_close.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     return upload_file_status_close
 
 def collection_fullpath(collection_id):
-    headers = {"App-ID":params_map["App-ID"],
-        "Auth-Token" : params_map["Auth-Token"]
+    url = f'{domain}/API/assets/v1/collections/{collection_id}/full/path'
+    headers = {"app-id":params_map["app-id"],
+        "auth-token" : params_map["auth-token"]
         }
     params = {"get_upload_path": "true"}
-    response = requests.get(f'{domain}/API/assets/v1/collections/{collection_id}/full/path', headers=headers,params=params)
+    response = requests.get(url, headers=headers,params=params)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return '' if "errors" in response else response
 
 def get_download_link_files(asset_id,file_id):
-    headers = {"App-ID":params_map["App-ID"],
-    "Auth-Token" : params_map["Auth-Token"]
+    url = f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/'
+    headers = {"app-id":params_map["app-id"],
+    "auth-token" : params_map["auth-token"]
     }
-    response = requests.get(f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/', headers=headers)
+    response = requests.get(url, headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["original_name"],response["url"]
 
 def get_download_link_proxy(asset_id,proxies_id):
-    headers = {"App-ID":params_map["App-ID"],
-    "Auth-Token" : params_map["Auth-Token"]
+    url = f'{domain}/API/files/v1/assets/{asset_id}/proxies/{proxies_id}/'
+    headers = {"app-id":params_map["app-id"],
+    "auth-token" : params_map["auth-token"]
     }
-    response = requests.get(f'{domain}/API/files/v1/assets/{asset_id}/proxies/{proxies_id}/', headers=headers)
+    response = requests.get(url, headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["name"],response["url"]
 
@@ -459,7 +598,7 @@ def GetObjectDict(files_list : list,params):
                 file_object["atime"] = f'{atime_epoch_seconds}'
                 file_object["owner"] = "0"
                 file_object["group"] = "0"
-                file_object["index"] = "0"
+                file_object["index"] = params["indexid"]
                 
                 if file_object["type"] == "F_REG":
                     scanned_files += 1
@@ -512,7 +651,7 @@ def GetObjectDict(files_list : list,params):
                 file_object["atime"] = f'{atime_epoch_seconds}'
                 file_object["owner"] = "0"
                 file_object["group"] = "0"
-                file_object["index"] = "0"
+                file_object["index"] = params["indexid"]
                 
                 if file_object["type"] == "F_REG":
                     scanned_files += 1
@@ -553,15 +692,8 @@ if __name__ == '__main__':
     target_path = args.target
 
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
-    # config_map = loadConfigurationMap(args.config)
-
-    config_map = {
-    "App-ID": "923d4e2c-54de-11ef-81e0-4e8dd0bedbee",
-    "Auth-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU5NDM0OWQ2LTU2MWItMTFlZi04ODQxLWFlODQ3Y2M3M2M1NyIsImV4cCI6MjAzODY0NjMzNH0._If9RA3zvBb0sQMziREjXtVkwWwKxTkowbL-q7QI0eU",
-    "name": "SDNA_AZURE",
-    "method": "AZURE"
-}
-    
+    config_map = loadConfigurationMap(args.config)
+ 
     params_map = {}
     params_map["foldername"] = args.foldername
     params_map["source"] = args.source

@@ -2,44 +2,41 @@
 
 --------------- With collection_id list call at particular collection --------------
 
-python provider_iconic.py -m list -s test.xml --collection_id 274fa3dc-5969-11ef-b299-6abee23a3d15
+python provider_iconik.py -m list -t test.xml -id 3ded220c-596b-11ef-a848-52f392b714aa -c sdna-iconik -in <index>
 
 --------------- Without collection_id lista call at root level --------------
 
-python provider_iconic.py -m list -s test.xml
+python provider_iconik.py -m list -t test.xml -c sdna-iconik -in <index>
+
 
 =============== Upload_Call ======================
 
 --------------- With collection_id File add at particular collection --------------
 
-python provider_iconic.py -m upload -s D:\storageDNA\iconik.py --collection_id 274fa3dc-5969-11ef-b299-6abee23a3d15
-
---------------- Without collection_id File add at root level --------------
-
-python provider_iconic.py -m upload -s D:\storageDNA\iconik.py
+python provider_iconik.py -m upload -s D:\storageDNA\iconik.py -id 3ded220c-596b-11ef-a848-52f392b714aa -c sdna-iconik
 
 =============== Download_Call ======================
 
-python provider_iconic.py -m download -t D:\storageDNA\test -tmp "fceb5538-6e61-11ef-8db7-66172d733014|file|fe11889c-6e61-11ef-9eed-62a5665cd05f"
+python provider_iconik.py -m download -t D:\storageDNA\test -tmp "33e3b8c2-6e9a-11ef-9356-1e1858e83e6d|file|3490e740-6e9a-11ef-ab37-f29e273aab21" -c sdna-iconik
 
-python provider_iconic.py -m download -t D:\storageDNA\test -tmp "fceb5538-6e61-11ef-8db7-66172d733014|proxy|feb4bd72-6e99-11ef-8b8f-16f2638460f3" 
+python provider_iconik.py -m download -t D:\storageDNA\test -tmp "33e3b8c2-6e9a-11ef-9356-1e1858e83e6d|proxy|378a635e-6e9a-11ef-9077-e242b78b56e8" -c sdna-iconik
 
 =============== Createfolder_Call ======================
-
+This call return last collection id.
 --------------- With collection_id --------------
 
-python provider_iconic.py -m createfolder --collection_id 274fa3dc-5969-11ef-b299-6abee23a3d15 --foldername sdna/test1/rushiraj
+python provider_iconik.py -m createfolder -id 3ded220c-596b-11ef-a848-52f392b714aa -f sdna/test1/rushiraj -c sdna-iconik
 
 --------------- Without collection_id Folder create at root level --------------
 
-python provider_iconic.py -m createfolder --foldername sdna/test1/rushiraj
+python provider_iconik.py -m createfolder -f sdna/test1/rushiraj -c sdna-iconik
 
 =============== Browse_Call ======================
 
 --------------- Without collection_id it will give root collection name and id --------------
 
-python provider_iconic.py -m browse 
+python provider_iconik.py -m browse -c sdna-iconik
 
 --------------- With collection_id it will give collection name and id inside that --------------
 
-python provider_iconic.py -m browse --collection_id 274fa3dc-5969-11ef-b299-6abee23a3d15
+python provider_iconik.py -m browse -id 274fa3dc-5969-11ef-b299-6abee23a3d15 -c sdna-iconik

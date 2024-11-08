@@ -59,7 +59,13 @@ def get_list_brandfolder():
     return [x["id"] for x in data]
 '''
 
+def strdata_to_logging_file(str_data, filename):
+    f = open(filename, "a")
+    f.write(f'{str_data}\n')
+    f.close()
+
 def get_call_list_of_assets(collectionid):
+    url = f'{domain}/api/v4/collections/{collectionid}/assets'
     headers = {
         'Accept': 'application/json',
         'Authorization': f'Bearer {config_map["Bearer_key"]}'
@@ -68,14 +74,19 @@ def get_call_list_of_assets(collectionid):
         "fields":"metadata",
         "include":"attachments",
         }
-    response  = requests.get(f'{domain}/api/v4/collections/{collectionid}/assets',headers=headers,params=params)
+    response  = requests.get(url,headers=headers,params=params)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["data"] 
 
 def get_call_list_of_files(collectionid):
+    url = f'{domain}/api/v4/collections/{collectionid}/attachments'
     headers = {
         'Accept': 'application/json',
         'Authorization': f'Bearer {config_map["Bearer_key"]}'
@@ -83,35 +94,37 @@ def get_call_list_of_files(collectionid):
     params = {
         "fields":"metadata"
         }
-    response  = requests.get(f'{domain}/api/v4/collections/{collectionid}/attachments',headers=headers,params=params)
+    response  = requests.get(url,headers=headers,params=params)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["data"]
 
-def assets_info(asset_id):
-    headers = {
-    'Accept': 'application/json',
-    'Authorization': f'Bearer {config_map["Bearer_key"]}'
-    }
-    response  = requests.get(f'{domain}/api/v4/assets{asset_id}',headers=headers)
-    return response.status_code
-
 def get_list_of_collections():
+    url = f'{domain}/api/v4/collections'
     headers = {
         'Accept': 'application/json',
         'Authorization': f'Bearer {config_map["Bearer_key"]}'
         }
 
-    response  = requests.get(f'{domain}/api/v4/collections',headers=headers)
+    response  = requests.get(url,headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["data"]
 
 def create_collection(brandfolder_id,collection_name):
+    url = f'{domain}/api/v4/brandfolders/{brandfolder_id}/collections'
     headers = {
     'Accept': 'application/json',
     'Authorization': f'Bearer {config_map["Bearer_key"]}'
@@ -125,18 +138,23 @@ def create_collection(brandfolder_id,collection_name):
         }
         }
 
-    response = requests.post(f'{domain}/api/v4/brandfolders/{brandfolder_id}/collections', json=data,headers=headers)
+    response = requests.post(url, json=data,headers=headers)
     return response["data"]["id"]
 
 
 def get_upload_request(file_path):
+    url = f'{domain}/api/v4/upload_requests'
     headers = {
     'Authorization': f'Bearer {config_map["Bearer_key"]}'
     }
-    response = requests.get(f'{domain}/api/v4/upload_requests',headers=headers)
+    response = requests.get(url,headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     upload_url = response["upload_url"]
     object_url = response["object_url"]
@@ -144,10 +162,16 @@ def get_upload_request(file_path):
     with open(file_path, 'rb') as f:
         x = requests.put(upload_url,data=f)
     if x.status_code !=200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     return object_url
 
 def create_asset_call(collection_id,upload_url,file_path,section_key):
+    url = f'{domain}/api/v4/collections/{collection_id}/assets'
     headers = {
     'Authorization': f'Bearer {config_map["Bearer_key"]}'
     }
@@ -167,22 +191,36 @@ def create_asset_call(collection_id,upload_url,file_path,section_key):
         },
         "section_key": section_key
         }
-    response = requests.post(f'{domain}/api/v4/collections/{collection_id}/assets',headers=headers,json=body)
+    response = requests.post(url,headers=headers,json=body)
+    if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
+    
     return response
 
 def get_download_link(attachment_id):
+    url = f'{domain}/api/v4/attachments/{attachment_id}'
     headers = {
     'Accept': 'application/json',
     'Authorization': f'Bearer {config_map["Bearer_key"]}'
     }
-    response = requests.get(f'{domain}/api/v4/attachments/{attachment_id}',headers=headers)
+    response = requests.get(url,headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["data"]["attributes"]["filename"],response["data"]["attributes"]["url"]
 
 def get_attachment_metadata(attachment_id):
+    url = f'{domain}/api/v4/attachments/{attachment_id}'
     headers = {
     'Accept': 'application/json',
     'Authorization': f'Bearer {config_map["Bearer_key"]}'
@@ -190,23 +228,32 @@ def get_attachment_metadata(attachment_id):
     params = {
     "fields":"metadata"
             }
-    response = requests.get(f'{domain}/api/v4/attachments/{attachment_id}',headers=headers,params=params)
+    response = requests.get(url,headers=headers,params=params)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["data"]["attributes"]["metadata"]
 
 
 def get_list_of_sections(collection_id):
+    url = f'{domain}/api/v4/collections/{collection_id}/sections'
     headers = {
     'Accept': 'application/json',
     'Authorization': f'Bearer {config_map["Bearer_key"]}'
     }
-    response = requests.get(f'{domain}/api/v4/collections/{collection_id}/sections',headers=headers)
+    response = requests.get(url,headers=headers)
     if response.status_code != 200:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
         print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     response = response.json()
     return response["data"]
 
@@ -329,7 +376,7 @@ def GetObjectDict(files_list : list,params):
                 file_object["atime"] = f'{atime_epoch_seconds}'
                 file_object["owner"] = "0"
                 file_object["group"] = "0"
-                file_object["index"] = "0"
+                file_object["index"] = params["indexid"]
                 
                 if file_object["type"] == "F_REG":
                     scanned_files += 1
@@ -359,6 +406,10 @@ if __name__ == '__main__':
     parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
     parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
     parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
+    parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
+
 
 
 
@@ -374,10 +425,8 @@ if __name__ == '__main__':
     section_id = args.section_id
 
 
-    # config_map = loadConfigurationMap(args.config)
-    config_map = {
-                    "Bearer_key" : "eyJhbGciOiJIUzI1NiJ9.eyJvcmdhbml6YXRpb25fa2V5IjoicGcyeW13LTN1cnpway01d2dzczUiLCJpYXQiOjE3MjgwMjY0MzcsInVzZXJfa2V5IjoiOTMzdG5uY3I2Yng2NDZ4cGNjdDM3cHoiLCJzdXBlcnVzZXIiOmZhbHNlfQ.9PVGOlORzpoMofvkJA9Vffy027QgScNavVAFVvZGedE"
-                }
+    config_map = loadConfigurationMap(args.config)
+    logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
 
     params_map = {}
     params_map["foldername"] = args.foldername
@@ -389,6 +438,9 @@ if __name__ == '__main__':
     params_map["filtertype"] = args.filtertype
     params_map["filterfile"] = args.filterfile
     params_map["policyfile"] = args.policyfile
+    params_map["indexid" ] = args.indexid
+    params_map["jobguid"] = args.jobguid
+    params_map["jobid"] = args.jobid
 
     for key in config_map:
         if key in params_map:
@@ -402,8 +454,8 @@ if __name__ == '__main__':
     
     if mode == 'list':
         if target_path is None:
-             print('Target path (-t <targetpath> ) option are required for list')
-             exit(1)
+            print('Target path (-t <targetpath>) and -in <index> options are required for list')
+            exit(1)
         files_list = []
         if collectionid:
             collection_id_list = [collectionid]
@@ -475,5 +527,10 @@ if __name__ == '__main__':
     # elif mode == "createfolder":
     #     collection_id = create_collection(brandfolder_id,folder_name)
     #     print(collection_id)
+
+
+    else:
+        print(f'Unsupported mode {mode}')
+        exit(1)
 
 
