@@ -23,8 +23,8 @@ def strdata_to_logging_file(str_data, filename):
 
 def get_call_of_collections():
     url = f"{domain}/API/assets/v1/collections/"
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
     response = requests.get(f"{domain}/API/assets/v1/collections/", headers=headers)
     if response.status_code != 200:
@@ -41,8 +41,8 @@ def get_call_of_collections():
 
 def get_call_of_collections_content(collection_id):
     url = f"{domain}/API/assets/v1/collections/{collection_id}/contents"
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
@@ -57,8 +57,8 @@ def get_call_of_collections_content(collection_id):
 
 def get_storage_id(storage_name,storage_method):
     url = f'{domain}/API/files/v1/storages/'
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
@@ -82,8 +82,8 @@ def create_asset_id(file_name,collection_id):
     params  = {"apply_default_acls":"false","apply_collection_acls":"true"}
     params_default  = {"apply_default_acls":"true"}
 
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.post(
         url,
@@ -109,8 +109,8 @@ def create_collection(collection_name,collection_id):
 
     params  = {"apply_default_acls":"true","restrict_collection_acls":"true"}
 
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.post(
         url, 
@@ -131,8 +131,8 @@ def create_collection(collection_name,collection_id):
 
 def get_filename_from_asset(asset_id):
     url = f'{domain}/API/assets/v1/assets/{asset_id}/'
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
@@ -149,8 +149,8 @@ def add_asset_in_collection(asset_id,collection_id):
     url = f'{domain}/API/assets/v1/collections/{collection_id}/contents'
     payload = {"object_id":asset_id,"object_type":"assets"}
     params = {"index_immediately":"true"}
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
     response = requests.post(url, headers=headers, json=payload,params=params)
     if response.status_code != 201:
@@ -165,8 +165,8 @@ def add_asset_in_collection(asset_id,collection_id):
 def create_format_id(asset_id, user_id):
     url = f'{domain}/API/files/v1/assets/{asset_id}/formats/'
     payload = {"user_id": user_id,"name": "ORIGINAL","metadata": [{"internet_media_type": "text/plain"}],"storage_methods": [params_map["method"]]}
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.post(url, headers=headers, json=payload)
     if response.status_code != 201:
@@ -182,8 +182,8 @@ def create_format_id(asset_id, user_id):
 def create_fileset_id(asset_id, format_id, file_name, storage_id,upload_path):
     url = f'{domain}/API/files/v1/assets/{asset_id}/file_sets/'
     payload = {"format_id": format_id,"storage_id": storage_id,"base_dir": upload_path,"name": file_name,"component_ids": []}
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.post(url, headers=headers, json=payload)
     if response.status_code != 201:
@@ -208,8 +208,8 @@ def get_upload_url(asset_id, file_name, file_size, fileset_id, storage_id, forma
         'file_set_id': fileset_id,
         'format_id': format_id
     }
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.post(url, headers=headers, json=file_info)
     if response.status_code != 201:
@@ -233,8 +233,8 @@ def get_upload_url_s3(asset_id, file_name, file_size, fileset_id, storage_id, fo
         'file_set_id': fileset_id,
         'format_id': format_id
     }
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.post(url, headers=headers, json=file_info)
     if response.status_code != 201:
@@ -258,8 +258,8 @@ def get_upload_url_b2(asset_id, file_name, file_size, fileset_id, storage_id, fo
         'file_set_id': fileset_id,
         'format_id': format_id
     }
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.post(url, headers=headers, json=file_info)
     if response.status_code != 201:
@@ -290,8 +290,8 @@ def get_upload_id_s3(upload_url):
 def get_part_url_s3(asset_id, file_id, upload_id):
     part_url = f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/multipart_url/part/'
     params = {"parts_num": "1", "upload_id": upload_id, "per_page": "100", "page": "1"}
-    headers = {"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                }
     response = requests.get(part_url, headers=headers, params=params)
     if response.status_code != 200:
@@ -356,8 +356,8 @@ def upload_file_s3(part_url, file_path,upload_id, asset_id, file_id):
         multipart_url = f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/multipart_url/'
     complete_url_response = requests.get(
         multipart_url,
-        headers={"App-ID":params_map["App-ID"],
-               "Auth-Token" : params_map["Auth-Token"]
+        headers={"app-id":params_map["app-id"],
+               "auth-token" : params_map["auth-token"]
                },
         params={"upload_id": upload_id, "type": "complete_url"}
     )
@@ -422,8 +422,8 @@ def upload_file_azure(upload_url, file_path):
 
 def file_status_update(asset_id, file_id):
     url = f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/'
-    headers = {"App-ID":params_map["App-ID"],
-            "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+            "auth-token" : params_map["auth-token"]
             }
     upload_file_status_close = requests.patch(url, headers=headers, json={"status": "CLOSED", "progress_processed": 100})
     if upload_file_status_close.status_code != 200:
@@ -437,8 +437,8 @@ def file_status_update(asset_id, file_id):
 
 def collection_fullpath(collection_id):
     url = f'{domain}/API/assets/v1/collections/{collection_id}/full/path'
-    headers = {"App-ID":params_map["App-ID"],
-        "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+        "auth-token" : params_map["auth-token"]
         }
     params = {"get_upload_path": "true"}
     response = requests.get(url, headers=headers,params=params)
@@ -454,8 +454,8 @@ def collection_fullpath(collection_id):
 
 def get_download_link_files(asset_id,file_id):
     url = f'{domain}/API/files/v1/assets/{asset_id}/files/{file_id}/'
-    headers = {"App-ID":params_map["App-ID"],
-    "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+    "auth-token" : params_map["auth-token"]
     }
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
@@ -470,8 +470,8 @@ def get_download_link_files(asset_id,file_id):
 
 def get_download_link_proxy(asset_id,proxies_id):
     url = f'{domain}/API/files/v1/assets/{asset_id}/proxies/{proxies_id}/'
-    headers = {"App-ID":params_map["App-ID"],
-    "Auth-Token" : params_map["Auth-Token"]
+    headers = {"app-id":params_map["app-id"],
+    "auth-token" : params_map["auth-token"]
     }
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
