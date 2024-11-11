@@ -21,18 +21,10 @@ VALID_MODES = ['upload', 'download', 'list']
 
 VALID_END_STATES = ['success', 'exception', 'failure']
 
-linux_dir = "/opt/sdna/bin"
-is_linux = 0
-if os.path.isdir(linux_dir):
-    is_linux = 1
-DNA_CLIENT_SERVICES = ''
-if is_linux == 1:    
-    DNA_CLIENT_SERVICES = '/etc/StorageDNA/DNAClientServices.conf'
-    SERVERS_CONF_FILE = "/etc/StorageDNA/Servers.conf"
-else:
-    DNA_CLIENT_SERVICES = '/Library/Preferences/com.storagedna.DNAClientServices.plist'
-    SERVERS_CONF_FILE = "/Library/Preferences/com.storagedna.Servers.plist"
-
+def strdata_to_logging_file(str_data, filename):
+    f = open(filename, "a")
+    f.write(f'{str_data}\n')
+    f.close()
 
 def csv_to_json(csv_file_path):
     entries = []
@@ -60,13 +52,32 @@ def csv_to_json(csv_file_path):
     return json_output
 
 
-def archiware_to_object_array(indexId, txt_file, filter_type, filter_file, policy_file):
+def archiware_to_object_array(txt_file,params):
     scanned_files = 0
     selected_count = 0
     output = {}
     file_object_list = []
     extensions = []
     total_size = 0
+    if "filtertype" in params:
+        filter_type = params["filtertype"]
+    else:
+        filter_type = None
+
+    if "filterfile" in params:
+        filter_file = params["filterfile"]
+    else:
+        filter_file = None
+
+    if "policyfile" in params:
+        policy_file = params["policyfile"]
+    else:
+        policy_file = None
+
+    policy_dict = None
+
+    if filter_type is None or filter_file is None:
+       filter_type = 'none'
 
     if filter_type.lower() != 'none':
         if not os.path.isfile(filter_file):
@@ -76,7 +87,8 @@ def archiware_to_object_array(indexId, txt_file, filter_type, filter_file, polic
         with open(filter_file, 'r') as f:
             extensions = [ext.strip() for ext in f.readlines()]
 
-    policy_dict = load_policies_from_file(policy_file)
+    if not policy_file is None:
+        policy_dict = load_policies_from_file(policy_file)
 
     with open(txt_file, 'r') as file:
         for line in file:
@@ -85,49 +97,49 @@ def archiware_to_object_array(indexId, txt_file, filter_type, filter_file, polic
             file_size = parts.pop()
             parts.pop().strip() #we don't want this field, so we pop and skip it.
             mtime_epoch_seconds = parts.pop()
-            id = parts.pop()
+            tmp_id = parts.pop()
             #checksum = id.replace(f"{indexId}#","").strip()
             file_path = parts.pop()
-            file_name = file_path.split('/')[-1]
-            file_parent_path = os.path.sep.join(file_path.split('/')[:-1])
-            is_dir = file_size == '0'
+            file_name = get_filename(file_path)
+            file_type = "file" if file_size != "0" else "dir"
 
-            if is_dir or filter_type == 'none':
+            if file_type.lower() != 'file'  or filter_type == 'none':
                 include_file = True
             elif len(extensions) == 0:
                 continue
             else:
                 file_in_list = isFilenameInFilterList(file_name, extensions)
-                include_file = (file_in_list and filter_type == "include") or (not file_in_list and filter_type == "exclude") or (filter_type == "none")
+                include_file = (file_in_list and filter_type == "include") or  (not file_in_list and filter_type == "exclude") or (filter_type == "none")
 
-            if not include_file:
+            if include_file == False:
                 continue
 
-            policy_type = policy_dict.get("type")
-            policy_entries = policy_dict.get("entries")
+            if not policy_dict is None:
+                policy_type = policy_dict["type"]
+                policy_entries = policy_dict["entries"]
+                
+                if policy_type == "ERROR":
+                    continue
 
-            if policy_type == "ERROR":
-                continue
+                if policy_type == "NOFILE":
+                    include_file = True
 
-            if policy_type == "NOFILE":
-                include_file = True
-
-            elif include_file and len(policy_entries) > 0:
-                include_file = file_in_policy(policy_dict, file_name, file_parent_path, file_size, mtime_epoch_seconds)
+                elif include_file and len(policy_entries) > 0:
+                    include_file = file_in_policy(policy_dict, file_name, file_path, file_size, mtime_epoch_seconds)
 
             file_object = {}
             if include_file:
                 file_object["name"] = file_path
                 file_object["size"] = file_size
                 file_object["mode"] = "0"
-                file_object["tmpid"] = id
+                file_object["tmpid"] = tmp_id
                 #file_object["checksum"] = checksum
-                file_object["type"] = "F_DIR" if file_object["size"] == '0' else "F_REG"
+                file_object["type"] = "F_REG" if file_type == "file" else "F_DIR"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
                 file_object["atime"] = f'{mtime_epoch_seconds}'
                 file_object["owner"] = "0"
                 file_object["group"] = "0"
-                file_object["index"] = "0"
+                file_object["index"] = params["indexid"]
 
                 if file_object["type"] == "F_REG":
                     scanned_files += 1
@@ -143,22 +155,22 @@ def archiware_to_object_array(indexId, txt_file, filter_type, filter_file, polic
         return output
     
 
-def list_index(indexId : str, jobGuid : str, cloudConfigDetails, targetScanFile : str, filterType : str, filterFile : str, policyFile : str):
-    url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/rest/v1/archive/indexes/{indexId}"
+def list_index():
+    url = f"http://{params_map['hostname']}:{params_map['port']}/rest/v1/archive/indexes/{params_map["indexid"]}"
     
-    file_name = f"{jobGuid}-archiware.txt"
+    file_name = f"{params_map["jobguid"]}-archiware.txt"
         
-    default_path = cloudConfigDetails['default_list_path']
+    default_path = params_map['default_list_path']
     default_path = default_path.replace('"','')
     default_path = default_path.strip()
     filepath = f"{default_path}/{file_name}"
     filepath = filepath.replace("//","/")
 
-    filename = f'{cloudConfigDetails["client_machine"]}:{filepath}'
+    filename = f'{params_map["client_machine"]}:{filepath}'
 
     attributes = ""
-    if not cloudConfigDetails['attributes'] is None and cloudConfigDetails['attributes'] != "":
-        attributes = cloudConfigDetails['attributes']
+    if not params_map['attributes'] is None and params_map['attributes'] != "":
+        attributes = params_map['attributes']
         attributes = attributes.replace('"','')
         attributes = attributes.strip()
 
@@ -174,54 +186,37 @@ def list_index(indexId : str, jobGuid : str, cloudConfigDetails, targetScanFile 
             "Content-Type": "application/json"
         }
 
-    #print(f"URL = {url}, FILENAME = {filename}, ATTR = {attributes}, HEADER = {headers}, USER = {cloudConfigDetails['username']}, PASS = {cloudConfigDetails['password']}")
-    #print(f"URL = {url}, HEADER = {headers}")
-
-    response = requests.put(url, headers=headers, auth=(f"{cloudConfigDetails['username']}", f"{cloudConfigDetails['password']}"))
+    response = requests.put(url, headers=headers, auth=(f"{params_map['username']}", f"{params_map['password']}"))
+    
     if response.status_code != 200:
-        return f"Response error. Status - {response.status_code}. Failed to get index inventory"
-    
-    if not os.path.exists(filepath):
-        return "File path not found. Failed to get index inventory"
-    
-    ''' -------- THIS IS USED FOR TESTING ONLY
-    filepath = "/Users/tejkonganda/Downloads/provider_rsync/4000.35.archiware.txt"
-
-    filter_type = "none"
-    filter_file = ""
-    policy_file = "/Users/tejkonganda/Downloads/provider_rsync/policy_sample_all.txt"
-    filter_type = "none"
-    filter_file = ""
-    #policy_file = "/Users/tejkonganda/Downloads/provider_rsync/policy_sample_all.txt"
-    policy_file = "/tmp/policy_sample_all.txt"
-    -------------- '''
-
-    parse_result = archiware_to_object_array(indexId, filepath, filterType, filterFile, policyFile)
-
-    if len(parse_result) == 0:
-        print("Failed to get index inventory")
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
         return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
 
-    generate_xml_from_file_objects(parse_result, targetScanFile)
-    #print(f"Generated XML file: {targetScanFile}")
-    return True
+    filepath = filepath.replace("/host_dir","")
+    return filepath
 
-
-def restore_request_call(csv_file, cloudConfigDetails):
-    url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/rest/v1/restore/restoreselections"
-
+def restore_request_call(csv_file):
+    url = f"http://{params_map['hostname']}:{params_map['port']}/rest/v1/restore/restoreselections"
     body = csv_to_json(csv_file)
     
     headers = {
-        "client" : f"{cloudConfigDetails['client_machine']}",
+        "client" : f"{params_map['client_machine']}",
         "Content-Type": "application/json"
     }
     
-    response = requests.post(url, headers=headers, params=body, auth=(cloudConfigDetails['username'], cloudConfigDetails['password']))
-
+    response = requests.post(url, headers=headers, params=body, auth=(params_map['username'], params_map['password']))
     if response.status_code != 200:
-        return "Failed to get restore request response."
-    
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
+
     json_resp = response.json()
     return_id = json_resp['ID']
     links_list = json_resp['links']
@@ -229,95 +224,102 @@ def restore_request_call(csv_file, cloudConfigDetails):
     return return_id
 
 
-def get_progress_status(job_id : str, cloudConfigDetails):
-    url = f"http://{cloudConfigDetails['hostname']}:{cloudConfigDetails['port']}/rest/v1/general/jobs/{job_id}"
+def get_progress_status(job_id : str):
+    url = f"http://{params_map['hostname']}:{params_map['port']}/rest/v1/general/jobs/{job_id}"
     header = {'Content-Type': 'application/json'}
-    response = requests.get(url, headers=header, auth=(cloudConfigDetails['username'], cloudConfigDetails['password']))
+
+    response = requests.get(url, headers=header, auth=(params_map['username'], params_map['password']))
     if response.status_code != 200:
-        return "Failed to get job progress status."
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(url, logging_dict["logging_error_filename"])
+        print(f"Response error. Status - {response.status_code}, Error - {response.text}")
+        return False
+    elif logging_dict["logging_level"] > 1:
+        strdata_to_logging_file(url, logging_dict["logging_filename"])
     
     json_resp = response.json()
     return json_resp
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Archiware functions.")
-    parser.add_argument('-m', '--mode', required = True, help = 'upload, download, list')
-    parser.add_argument('-c', '--configname', required = True, help = 'Archiware config name to work with in cloud_targets.conf')
-    parser.add_argument('-s', '--source', help = 'REQUIRED if upload or download')
-    parser.add_argument('-t', '--target', help = 'REQUIRED if upload or download or list. For list, it will be the final scan file.')
-    parser.add_argument('-in', '--indexid', help = 'REQUIRED if list')
-    parser.add_argument('-ji', '--jobguid', help = 'REQUIRED if list')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', required = True, help = 'Configuration name')
+    parser.add_argument('-m', '--mode', required = True, help = 'upload,browse,download,list,actions')
+    parser.add_argument('-s','--source',help='source file')
+    parser.add_argument('-t','--target',help='target_path')
+    parser.add_argument('-id','--collection_id',help='collection_id')
+    parser.add_argument('-tmp','--tmp_id',help='tmp_id')
     parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
     parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
     parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
+    parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
+    parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
     parser.add_argument('--progressfile', required=False, help='Progress file for restore')
-    parser.add_argument('--restoreticket', required=False, help='Restore ticket')
+    parser.add_argument('--restoreticketpath', required=False, help='Restore ticket')
     
     args = parser.parse_args()
-
     mode = args.mode
-    config_name = args.configname
+    target_path = args.target
+    restore_ticket_path = args.restoreticketpath
+    progress_file = args.progressfile
     job_guid = args.jobguid
-    
-    cloudTargetPath = ''
-    
-    if is_linux == 1:
-        config_parser = ConfigParser()
-        config_parser.read(DNA_CLIENT_SERVICES)
-        if config_parser.has_section('General') and config_parser.has_option('General','cloudconfigfolder'):
-            section_info = config_parser['General']
-            cloudTargetPath = section_info['cloudconfigfolder'] + "/cloud_targets.conf"
-    else:
-        with open(DNA_CLIENT_SERVICES, 'rb') as fp:
-            my_plist = plistlib.load(fp)
-            cloudTargetPath = my_plist["CloudConfigFolder"] + "/cloud_targets.conf"
-            
-    if not os.path.exists(cloudTargetPath):
-        err= "Unable to find cloud target file: " + cloudTargetPath
-        sys.exit(err)
 
-    config_parser = ConfigParser()
-    config_parser.read(cloudTargetPath)
-    if not config_name in config_parser.sections():
-        err = 'Unable to find cloud configuration: ' + config_name
-        sys.exit(err)
-        
-    cloud_config_info = config_parser[config_name]
     
-    if mode == "list":
-        index_id = args.indexid
-        target_scan_file = args.target
-        filter_type = 'none'
-        if args.filtertype is not None:
-            filter_type = args.filtertype
-        filter_file = ''
-        if filter_type != 'none':
-            if args.filterfile is not None:
-                filter_file = args.filterfile
-        policy_file = ''
-        if args.policyfile is not None:
-            policy_file = args.policyfile
+    logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
+    config_map = loadConfigurationMap(args.config)
 
-        if not list_index(index_id, job_guid, cloud_config_info, target_scan_file, filter_type, filter_file, policy_file):
-            exit(-1)
+    params_map = {}
+    params_map["target"] = args.target
+    params_map["filtertype"] = args.filtertype
+    params_map["filterfile"] = args.filterfile
+    params_map["policyfile"] = args.policyfile
+    params_map["indexid" ] = args.indexid
+    params_map["jobguid"] = args.jobguid
+    params_map["jobid"] = args.jobid
+
+    for key in config_map:
+        if key in params_map:
+            print(f'Skipping existing key {key}')
         else:
-            exit(0)
+            params_map[key] = config_map[key]
+
+    if mode == 'actions':
+        print('list,bulkrestore')
+        exit(0)
+
+    if mode == "list":
+        if target_path is None or args.indexid is None:
+            print('Target path (-t <targetpath> ) -in <index>  options are required for list')
+            exit(1)
+            
+        txt_file_path = list_index()
+        if os.path.exists(txt_file_path):
+            objects_dict = archiware_to_object_array(txt_file_path,params_map)
+            if objects_dict and target_path:
+                generate_xml_from_file_objects(objects_dict, target_path)
+                print(f"Generated XML file: {target_path}")
+                exit(0)
+            else:
+                print("Failed to generate XML file.")
+                exit(1)
+        else:
+            print("File path not found. Failed to get index inventory")
+            exit(1)
     
     elif mode == "bulkrestore":
-        restore_ticket = args.restoreticket
-        progress_file = args.progressfile
+        if args.restoreticketpath is None or args.progressfile is None:
+            print('Restore ticket path (--restoreticketpath ) and Progress file path (--progressfile) options are required for bulkrestore')
+            exit(1)
 
-        restore_csv = restore_ticket_to_csv(restore_ticket)
+        current_time = int(time.time())
+        restore_csv = restore_ticket_to_csv(restore_ticket_path, current_time)
+        return_id = restore_request_call(restore_csv)
 
-        return_id = restore_request_call(restore_csv, cloud_config_info)
-
-        if return_id == "" or "Failed" in return_id:
-            exit(-1)
-        else:
+        if return_id:
             job_stat = ""
             progress_dict = {}
-            progress_dict["duration"] = int(time.time())
+            progress_dict["duration"] = current_time
             progress_dict["run_id"] = job_guid
             progress_dict["job_id"] = job_guid
             progress_dict["progress_path"] = progress_file
@@ -346,3 +348,10 @@ if __name__ == '__main__':
                 progress_dict["status"] = f'{progress_dict["status"]} : {progress_dict["description"]}'
                 send_progress(progress_dict, 1)
                 exit(-1)
+        else:
+            print("Restore Files request Failed.")
+            exit(1)
+        
+    else:
+        print(f'Unsupported mode {mode}')
+        exit(1)
