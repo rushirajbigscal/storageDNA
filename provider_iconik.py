@@ -592,7 +592,7 @@ def GetObjectDict(files_list : list,params):
                 file_object["name"] = file_path
                 file_object["size"] = file_size
                 file_object["mode"] = "0"
-                file_object["tmpid"] = f"{data["asset_id"]}|file|{file["id"]}"
+                file_object["tmpid"] = f"{data['asset_id']}|file|{file['id']}"
                 file_object["type"] = "F_REG" if file_type == "file" else "F_DIR"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
                 file_object["atime"] = f'{atime_epoch_seconds}'
@@ -645,7 +645,7 @@ def GetObjectDict(files_list : list,params):
                 file_object["name"] = file_path
                 file_object["size"] = file_size
                 file_object["mode"] = "0"
-                file_object["tmpid"] = f"{data["asset_id"]}|proxy|{proxies["id"]}"
+                file_object["tmpid"] = f"{data['asset_id']}|proxy|{proxies['id']}"
                 file_object["type"] = "F_REG" if file_type == "file" else "F_DIR"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
                 file_object["atime"] = f'{atime_epoch_seconds}'
