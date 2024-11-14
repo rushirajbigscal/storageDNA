@@ -12,7 +12,9 @@ domain = "https://apidemo.egnyte.com"
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def get_list_call(folder_path,recursive=None):
-    url = f"{domain}/pubapi/v1/fs/{folder_path}"
+    if not folder_path:
+        folder_path = ""
+    url = f"{domain}/pubapi/v1/fs/Shared/{folder_path}"
     headers = {
     'Authorization': f'Bearer {config_map['bearer_key']}'
     }
