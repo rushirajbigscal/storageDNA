@@ -13,7 +13,7 @@ domain = "https://brandfolder.com"
 def get_list_brandfolder():
     headers = {
     'Accept': 'application/json',
-    'Authorization': f'Bearer {config_map["Bearer_key"]}'
+    'Authorization': f'Bearer {config_map["bearer_key"]}'
     }
 
     # response  = requests.get(f'{domain}/api/v4/brandfolders', headers=headers)
@@ -68,7 +68,7 @@ def get_call_list_of_assets(collectionid):
     url = f'{domain}/api/v4/collections/{collectionid}/assets'
     headers = {
         'Accept': 'application/json',
-        'Authorization': f'Bearer {config_map["Bearer_key"]}'
+        'Authorization': f'Bearer {config_map["bearer_key"]}'
         }
     params = {
         "fields":"metadata",
@@ -89,7 +89,7 @@ def get_call_list_of_files(collectionid):
     url = f'{domain}/api/v4/collections/{collectionid}/attachments'
     headers = {
         'Accept': 'application/json',
-        'Authorization': f'Bearer {config_map["Bearer_key"]}'
+        'Authorization': f'Bearer {config_map["bearer_key"]}'
         }
     params = {
         "fields":"metadata"
@@ -109,7 +109,7 @@ def get_list_of_collections():
     url = f'{domain}/api/v4/collections'
     headers = {
         'Accept': 'application/json',
-        'Authorization': f'Bearer {config_map["Bearer_key"]}'
+        'Authorization': f'Bearer {config_map["bearer_key"]}'
         }
 
     response  = requests.get(url,headers=headers)
@@ -127,7 +127,7 @@ def create_collection(brandfolder_id,collection_name):
     url = f'{domain}/api/v4/brandfolders/{brandfolder_id}/collections'
     headers = {
     'Accept': 'application/json',
-    'Authorization': f'Bearer {config_map["Bearer_key"]}'
+    'Authorization': f'Bearer {config_map["bearer_key"]}'
     }
 
     data = {
@@ -145,7 +145,7 @@ def create_collection(brandfolder_id,collection_name):
 def get_upload_request(file_path):
     url = f'{domain}/api/v4/upload_requests'
     headers = {
-    'Authorization': f'Bearer {config_map["Bearer_key"]}'
+    'Authorization': f'Bearer {config_map["bearer_key"]}'
     }
     response = requests.get(url,headers=headers)
     if response.status_code != 200:
@@ -173,7 +173,7 @@ def get_upload_request(file_path):
 def create_asset_call(collection_id,upload_url,file_path,section_key):
     url = f'{domain}/api/v4/collections/{collection_id}/assets'
     headers = {
-    'Authorization': f'Bearer {config_map["Bearer_key"]}'
+    'Authorization': f'Bearer {config_map["bearer_key"]}'
     }
     file_path = os.path.normpath(file_path)
     body = {
@@ -206,7 +206,7 @@ def get_download_link(attachment_id):
     url = f'{domain}/api/v4/attachments/{attachment_id}'
     headers = {
     'Accept': 'application/json',
-    'Authorization': f'Bearer {config_map["Bearer_key"]}'
+    'Authorization': f'Bearer {config_map["bearer_key"]}'
     }
     response = requests.get(url,headers=headers)
     if response.status_code != 200:
@@ -223,7 +223,7 @@ def get_attachment_metadata(attachment_id):
     url = f'{domain}/api/v4/attachments/{attachment_id}'
     headers = {
     'Accept': 'application/json',
-    'Authorization': f'Bearer {config_map["Bearer_key"]}'
+    'Authorization': f'Bearer {config_map["bearer_key"]}'
     }
     params = {
     "fields":"metadata"
@@ -244,7 +244,7 @@ def get_list_of_sections(collection_id):
     url = f'{domain}/api/v4/collections/{collection_id}/sections'
     headers = {
     'Accept': 'application/json',
-    'Authorization': f'Bearer {config_map["Bearer_key"]}'
+    'Authorization': f'Bearer {config_map["bearer_key"]}'
     }
     response = requests.get(url,headers=headers)
     if response.status_code != 200:
@@ -370,7 +370,7 @@ def GetObjectDict(files_list : list,params):
                 file_object["size"] = file_size
                 file_object["mode"] = file_mode
                 file_object["url"] = f"{asset_html}|{file_html}"
-                file_object["tmpid"] = f"{data["asset_id"]}|{attachment_id}"
+                file_object["tmpid"] = f"{data['asset_id']}|{attachment_id}"
                 file_object["type"] = "F_REG" if file_type == "file" else "F_DIR"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
                 file_object["atime"] = f'{atime_epoch_seconds}'
