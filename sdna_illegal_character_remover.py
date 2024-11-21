@@ -36,7 +36,7 @@ def illegal_char(target_path,dry_run,csv_file_path,pattern):
 
             for file_name in files:
                 file_path_illegal = os.path.join(root,file_name)
-                filename = file_name.strip().replace(" ","")
+                filename = file_name.strip().replace("  ","")
                 filename = re.sub(pattern,"",filename)
                 file_path_legal = os.path.join(root,filename)
                 if file_path_legal != file_path_illegal:
@@ -51,7 +51,7 @@ def illegal_char(target_path,dry_run,csv_file_path,pattern):
                 
             for i ,dir_name in enumerate(dirs):
                 dir_path_illegal = os.path.join(root,dir_name)
-                dirname = dir_name.strip().replace(" ","")
+                dirname = dir_name.strip().replace("  ","")
                 dirname = re.sub(pattern,"",dirname)
                 dir_path_legal = os.path.join(root,dirname)
                 if dir_path_legal != dir_path_illegal:
@@ -76,9 +76,9 @@ def illegal_char(target_path,dry_run,csv_file_path,pattern):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t','--target',help='target_path')
-    parser.add_argument('-c','--csv_file',help='csv_file_path')
-    parser.add_argument('-f','--txt_file',help='txt_file_path with symboles that you want to remove')
+    parser.add_argument('-t','--target',help='targetpath')
+    parser.add_argument('-c','--csv_file',help='csvfilepath There generated csv file is stored.')
+    parser.add_argument('-f','--txt_file',help='txtfilepath with symbols that you want to remove')
     parser.add_argument('--dry_run',action='store_true',help='dry_run')
    
 
