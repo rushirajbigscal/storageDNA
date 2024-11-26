@@ -142,6 +142,8 @@ def GetObjectDict(data : dict,params):
                 selected_count += 1
                 total_size += int(file_object["size"])
             file_object_list.append(file_object)
+            
+        output["filelist"] = file_object_list
 
     output["scanned_count"] = scanned_files
     output["selected_count"] = selected_count
@@ -157,12 +159,10 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--mode', required = True, help = 'browse,list,actions')
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-f','--foldername',help='folder_name_to_create')
-    parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
-    parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
-    parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
     parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
+    parser.add_argument('-p', "--projectname", required=False, help = 'Project name')
     
     args = parser.parse_args()
     mode = args.mode
@@ -171,16 +171,19 @@ if __name__ == '__main__':
 
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
     config_map = loadConfigurationMap(args.config)
+    filter_file_dict = loadFilterPolicyFiles (args.jobguid)
+    
 
     params_map = {}
     params_map["foldername"] = args.foldername
     params_map["target"] = args.target
-    params_map["filtertype"] = args.filtertype
-    params_map["filterfile"] = args.filterfile
-    params_map["policyfile"] = args.policyfile
     params_map["indexid" ] = args.indexid
     params_map["jobguid"] = args.jobguid
     params_map["jobid"] = args.jobid
+    
+    params_map["filtertype"] = filter_file_dict["type"]
+    params_map["filterfile"] = filter_file_dict["filterfile"]
+    params_map["policyfile"] = filter_file_dict["policyfile"]
 
     for key in config_map:
         if key in params_map:
@@ -189,8 +192,13 @@ if __name__ == '__main__':
             params_map[key] = config_map[key]
 
     if mode == 'actions':
-        print('browse,list')
-        exit(0)
+        try:
+            if params_map["actions"]:
+                print(params_map["actions"])
+                exit(0)
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            exit(1)
 
     if mode == 'list':
         if target_path is None or folder_name is None or args.indexid is None:
@@ -198,9 +206,8 @@ if __name__ == '__main__':
             exit(1)
 
         all_objs_list = GetAllObjects(folder_name,recursive='true')
-        print(all_objs_list)
         if not all_objs_list['requestId']:
-            exit(-1)
+            exit(1)
 
         requestId = all_objs_list['requestId'] 
         state_name = ""
@@ -211,6 +218,9 @@ if __name__ == '__main__':
             time.sleep(5)
 
         objects_dict = GetObjectDict(listing_json_responce,params_map)
+        if len(listing_json_responce["requestResults"]) == 0:
+            objects_dict = {}
+        
         if objects_dict and target_path:
             generate_xml_from_file_objects(objects_dict, target_path)
             print(f"Generated XML file: {target_path}")

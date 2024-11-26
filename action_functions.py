@@ -48,7 +48,7 @@ def add_CDATA_tags(folders : list):
 def add_CDATA_tags_with_id(folders : list):
     xml_output = '<FOLDERLIST>\n'
     for folder in folders:
-        xml_output += f'<FOLDER ID="{folder["id"]}",ACCESS="1",TYPE="NORMAL"><![CDATA[{folder["name"]}]]></FOLDER>\n'
+        xml_output += f'<FOLDER ID="{folder["id"]}" ACCESS="1" TYPE="NORMAL"><![CDATA[{folder["name"]}]]></FOLDER>\n'
     xml_output += '</FOLDERLIST>'
     return xml_output
 
@@ -230,11 +230,12 @@ def generate_xml_from_file_objects(parse_result, xml_file):
     selected_count = parse_result.get("selected_count")
     total_size = parse_result.get("total_size")
     root = ET.Element("files", scanned=str(scanned_count), selected=str(selected_count), size=str(total_size), bad_dir_count="0", delete_count="0", delete_folder_count="0")
-
-    for file_info in parse_result["filelist"]:
-        file_element = ET.SubElement(root, "file")
-        for attr_name, attr_value in file_info.items():
-            file_element.set(attr_name, str(attr_value))
+    
+    if "filelist" in parse_result:
+        for file_info in parse_result["filelist"]:
+            file_element = ET.SubElement(root, "file")
+            for attr_name, attr_value in file_info.items():
+                file_element.set(attr_name, str(attr_value))
     
     tree = ET.ElementTree(root)
     tree.write(xml_file)
@@ -324,6 +325,31 @@ def restore_ticket_to_csv(ticket_path, current_time):
     file.close()
     return csv_file
 
+def loadFilterPolicyFiles(job_guid):
+
+    filtering_dict = {}
+    filtering_dict["type"] = "none"
+    filtering_dict["filterfile"] = ""
+    filtering_dict["policyfile"] = ""
+    
+    attribute_file = f'D:\\storageDNA\\policy_sample_al.txt'
+    include_file = f'D:\\storageDNA\\extension.txt'
+    exclude_file = f'/tmp/.exclude-{job_guid}.out'
+
+    if os.path.exists(include_file):
+        filtering_dict["type"] = "include"
+        filtering_dict["filterfile"] = include_file
+
+    if os.path.exists(exclude_file):
+        filtering_dict["type"] = "exclude"
+        filtering_dict["filterfile"] = include_file
+    
+    if os.path.exists(attribute_file):
+        filtering_dict["policyfile"] = attribute_file
+
+    return filtering_dict
+
+
 def loadLoggingDict(logging_suffix, job_guid):
 
     logging_dict = {}
@@ -342,6 +368,7 @@ def loadLoggingDict(logging_suffix, job_guid):
     logging_folder = ""
     logging_level = 0
     logging_available = False
+    logging_dict["logging_level"] = 0
 
     if os.path.isdir("D:/storageDNA"):
         config_parser = ConfigParser()
@@ -356,7 +383,6 @@ def loadLoggingDict(logging_suffix, job_guid):
 
     else:
         with open(DNA_CLIENT_SERVICES, 'rb') as fp:
-            print(fp)
             my_plist = plistlib.load(fp)
             logging_level = int(my_plist["CommandLoggingLevel"])
             logging_folder = my_plist['CommandLoggingPath']
