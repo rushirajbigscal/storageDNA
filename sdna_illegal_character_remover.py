@@ -88,12 +88,9 @@ if __name__ == "__main__":
     txt_file_path = args.txt_file
     dry_run = args.dry_run
 
-    if target_path is None:
-        print('Target path (-t <targetpath> ) and Csv file path (-c <csv_file>) options are required for create CSV file.')
+    if target_path is None or txt_file_path is None or csv_file_path is None:
+        print('Target path (-t <targetpath> ) , Csv file path (-c <csv_file>) and Txt file (-f <txt_file>) options are required.')
         exit(1)
-    if not dry_run:
-        if txt_file_path is None:
-            print('Txt file (-f <txt_file>) options is requied.')
             
     regex_patten = txt_file_to_regex_pattern(txt_file_path)
     csv_file = illegal_char(target_path,dry_run,csv_file_path,regex_patten)
