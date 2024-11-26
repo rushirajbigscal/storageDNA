@@ -34,7 +34,7 @@ def get_mhl_file_path(file_path):
     root = tree.getroot()
     mhl_path = root.find('.//mhl:path', namespace)
     if mhl_path.text:
-        return f"{os.path.join("ascmhl",mhl_path.text)}"
+        return f"{os.path.join('ascmhl',mhl_path.text)}"
     else:
         return False
 
