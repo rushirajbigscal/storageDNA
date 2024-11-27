@@ -167,6 +167,8 @@ if __name__ == "__main__":
     parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
+    parser.add_argument('-p', "--projectname", required=False, help = 'Project name')
+    
 
     args = parser.parse_args()
     mode = args.mode
@@ -220,10 +222,9 @@ if __name__ == "__main__":
                 if get_mhl_file_path(file_path):
                     mhl_file_path = os.path.join(folder_name,get_mhl_file_path(file_path))
                     objects_dict = GetObjectDict(mhl_file_path,params_map)
-                else:
-                    print("Faild to genrate object dict.")
             else:
-                print("Faild to create an mhl xml file.")
+                objects_dict = {}
+                
             if objects_dict and target_path:
                 generate_xml_from_file_objects(objects_dict, target_path)
                 print(f"Generated XML file: {target_path}")
