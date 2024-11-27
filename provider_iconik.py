@@ -494,6 +494,7 @@ def calculate_sha1(file_path):
     return sha1.hexdigest()
 
 def process_collection(collection : list):
+
     for x in collection:
         collection_id = x["id"]
         y = get_call_of_collections_content(collection_id)
@@ -589,10 +590,12 @@ def GetObjectDict(files_list : list,params):
 
             file_object = {}
             if include_file == True:
+                local_asset_id = data["asset_id"]
+                local_file_id = file["id"]
                 file_object["name"] = file_path
                 file_object["size"] = file_size
                 file_object["mode"] = "0"
-                file_object["tmpid"] = f"{data['asset_id']}|file|{file['id']}"
+                file_object["tmpid"] = f"{local_asset_id}|file|{local_file_id}"
                 file_object["type"] = "F_REG" if file_type == "file" else "F_DIR"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
                 file_object["atime"] = f'{atime_epoch_seconds}'
@@ -642,10 +645,12 @@ def GetObjectDict(files_list : list,params):
 
             file_object = {}
             if include_file == True:
+                local_asset_id = data["asset_id"]
+                local_proxy_id = proxies["id"]
                 file_object["name"] = file_path
                 file_object["size"] = file_size
                 file_object["mode"] = "0"
-                file_object["tmpid"] = f"{data['asset_id']}|proxy|{proxies['id']}"
+                file_object["tmpid"] = f"{local_asset_id}|proxy|{local_proxy_id}"
                 file_object["type"] = "F_REG" if file_type == "file" else "F_DIR"
                 file_object["mtime"] = f'{mtime_epoch_seconds}'
                 file_object["atime"] = f'{atime_epoch_seconds}'
@@ -658,11 +663,13 @@ def GetObjectDict(files_list : list,params):
                     selected_count += 1
                     total_size += int(file_object["size"])
                 file_object_list.append(file_object)
-
-        output["scanned_count"] = scanned_files
-        output["selected_count"] = selected_count
-        output["total_size"] = total_size
+    
         output["filelist"] = file_object_list
+
+    output["scanned_count"] = scanned_files
+    output["selected_count"] = selected_count
+    output["total_size"] = total_size
+    output["filelist"] = file_object_list
 
     return output
 
@@ -676,12 +683,10 @@ if __name__ == '__main__':
     parser.add_argument('-f','--foldername',help='folder_name_to_create')
     parser.add_argument('-id','--collection_id',help='collection_id')
     parser.add_argument('-tmp','--tmp_id',help='tmp_id')
-    parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
-    parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
-    parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
     parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
+    parser.add_argument('-p', "--projectname", required=False, help = 'Project name')
 
     args = parser.parse_args()
     mode = args.mode
@@ -691,19 +696,31 @@ if __name__ == '__main__':
     tmp_id = args.tmp_id
     target_path = args.target
 
+    # if collectionid is None and mode == 'list':
+    #     if file_path is None or len(file_path) == 0:
+    #         print("Error collection id or path required.")
+    #         sys.exit(1)
+    #     path_parts = file_path.split("/")
+    #     path_parts = list(filter(None, path_parts))
+    #     print(path_parts)
+    #     last_path_part = path_parts[-1]
+    #     collectionid = last_path_part.split(":")[0]
+
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
     config_map = loadConfigurationMap(args.config)
- 
+    filter_file_dict = loadFilterPolicyFiles (args.jobguid)
+
     params_map = {}
     params_map["foldername"] = args.foldername
     params_map["source"] = args.source
     params_map["target"] = args.target
-    params_map["filtertype"] = args.filtertype
-    params_map["filterfile"] = args.filterfile
-    params_map["policyfile"] = args.policyfile
     params_map["indexid" ] = args.indexid
     params_map["jobguid"] = args.jobguid
     params_map["jobid"] = args.jobid
+
+    params_map["filtertype"] = filter_file_dict["type"]
+    params_map["filterfile"] = filter_file_dict["filterfile"]
+    params_map["policyfile"] = filter_file_dict["policyfile"]
 
     for key in config_map:
         if key in params_map:
@@ -712,8 +729,13 @@ if __name__ == '__main__':
             params_map[key] = config_map[key]
 
     if mode == 'actions':
-        print('upload,browse,download,list,createfolder')
-        exit(0)
+        try:
+            if params_map["actions"]:
+                print(params_map["actions"])
+                exit(0)
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            exit(1)
 
     if mode == 'list':
         if target_path is None:
@@ -725,7 +747,9 @@ if __name__ == '__main__':
             collection = get_call_of_collections()
         files_list,collections_list = process_collection(collection)
         objects_dict = GetObjectDict(files_list,params_map)
-        if objects_dict and target_path:
+        if len(files_list) == 0:
+            objects_dict = {}
+        if target_path:
             generate_xml_from_file_objects(objects_dict, target_path)
             print(f"Generated XML file: {target_path}")
             exit(0)
@@ -817,6 +841,28 @@ if __name__ == '__main__':
             exit(1)
         
 
+    elif mode == 'buckets':
+        buckets = []
+        collections = get_call_of_collections()
+        for x in collections:
+            if 'files' not in x:
+                buckets.append(f"{x['id']}:{x['title']}")
+        print(','.join(buckets))
+        exit(0)
+
+    elif mode == 'bucketsfolders':
+        folders = []
+        collections = get_call_of_collections() 
+        for x in collections:
+            if 'files' not in x:
+                folders.append({"name" : x["title"],
+                                "id" : x["id"]
+                                })
+                
+        xml_output = add_CDATA_tags_with_id(folders)
+        print(xml_output)
+        exit(0)
+
     elif mode == 'browse':
         folders = []
         # collection_id = "a70d2dca-59f4-11ef-b571-4a8ffd934f12"
@@ -827,7 +873,8 @@ if __name__ == '__main__':
             collections = get_call_of_collections() 
         for x in collections:
             if 'files' not in x:
-                folders.append({"name" : x["title"],
+                folder_name = f'{x["id"]}:{x["title"]}'
+                folders.append({"name" : folder_name,
                                 "id" : x["id"]
                                 })
                 

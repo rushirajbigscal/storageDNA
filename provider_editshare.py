@@ -12,7 +12,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def get_search_call(folder_name,recursive=None):
-    url = f"https://{params_map["hostname"]}:8006/api/v2/search"
+    url = f"https://{params_map["hostname"]}:{params_map["port"]}/api/v2/search"
     params = {
         "recursive" : recursive,
         "dir" : folder_name,
@@ -37,7 +37,7 @@ def get_search_call(folder_name,recursive=None):
     return response
 
 def get_clip_call(clip_id):
-    url = f"https://127.0.0.1:8006/api/v2/metadata/clips/{clip_id}"
+    url = f"https://{params_map["hostname"]}:{params_map["port"]}/api/v2/metadata/clips/{clip_id}"
     params = {
         "proxy_details" : "true"
     }
@@ -337,7 +337,7 @@ def get_clip_call(clip_id):
     return response
 
 def get_download_id(file_id):
-    url = f"https://{params_map["hostname"]}:8006/api/v2/transfer/download"
+    url = f"https://{params_map["hostname"]}:{params_map["port"]}/api/v2/transfer/download"
     json_body = {
     "file_id": file_id,
     "offset": 0
@@ -363,7 +363,7 @@ def get_download_id(file_id):
     return response[0]["transfer"]
 
 def get_upload_id(file_path,mediaspace,user):
-    url = f"https://{params_map["hostname"]}:8006/api/v2/transfer/upload"
+    url = f"https://{params_map["hostname"]}:{params_map["port"]}/api/v2/transfer/upload"
     json_body = {
     "create_proxy": "true",
     "fail_if_exists": "false",
@@ -396,7 +396,7 @@ def get_upload_id(file_path,mediaspace,user):
 
 
 def upload_file(upload_id):
-    url = f"https://{params_map["hostname"]}:8006/api/v2/transfer/upload/{upload_id}"
+    url = f"https://{params_map["hostname"]}:{params_map["port"]}/api/v2/transfer/upload/{upload_id}"
     # response = requests.put(url)
     # if response.status_code != 200:
     #     print(f"Response error. Status - {response.status_code}, Error - {response.text}")
@@ -406,7 +406,7 @@ def upload_file(upload_id):
 
 
 def download_file(download_id):
-    url = f"https://{params_map["hostname"]}:8006/api/v2/transfer/download/{download_id}"
+    url = f"https://{params_map["hostname"]}:{params_map["port"]}/api/v2/transfer/download/{download_id}"
     # response = requests.get(url)
     # if response.status_code != 200:
     #     print(f"Response error. Status - {response.status_code}, Error - {response.text}")
@@ -584,6 +584,8 @@ def GetObjectDict(data_list,params):
                 selected_count += 1
                 total_size += int(file_object["size"])
             file_object_list.append(file_object)
+        
+        output["filelist"] = file_object_list
 
     output["scanned_count"] = scanned_files
     output["selected_count"] = selected_count
@@ -596,18 +598,16 @@ def GetObjectDict(data_list,params):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required = True, help = 'Configuration name')
-    parser.add_argument('-m', '--mode', required = True, help = 'upload,browse,download,list,actions')
+    parser.add_argument('-m', '--mode', required = True, help = 'upload,download,list,actions')
     parser.add_argument('-s','--source',help='source file')
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-f','--foldername',help='folder_name_to_create')
     parser.add_argument('-tmp','--tmp_id',help='tmp_id')
-    parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
-    parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
-    parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
     parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
-
+    parser.add_argument('-p', "--projectname", required=False, help = 'Project name')
+    
     args = parser.parse_args()
     mode = args.mode
     file_path = args.source
@@ -615,22 +615,20 @@ if __name__ == "__main__":
     folder_name = args.foldername
     tmp_id = args.tmp_id
 
+    config_map = loadConfigurationMap(args.config)
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
-    # config_map = loadConfigurationMap(args.config)
-
-    config_map = {'hostname': '192.168.1.172',
-                         'port': 8000 
-                }
+    filter_file_dict = loadFilterPolicyFiles (args.jobguid)
 
     params_map = {}
     params_map["foldername"] = args.foldername
     params_map["target"] = args.target
-    params_map["filtertype"] = args.filtertype
-    params_map["filterfile"] = args.filterfile
-    params_map["policyfile"] = args.policyfile
     params_map["indexid" ] = args.indexid
     params_map["jobguid"] = args.jobguid
     params_map["jobid"] = args.jobid
+    
+    params_map["filtertype"] = filter_file_dict["type"]
+    params_map["filterfile"] = filter_file_dict["filterfile"]
+    params_map["policyfile"] = filter_file_dict["policyfile"]
 
 
     for key in config_map:
@@ -640,8 +638,13 @@ if __name__ == "__main__":
             params_map[key] = config_map[key]
 
     if mode == 'actions':
-        print('upload,browse,download,list')
-        exit(0)
+        try:
+            if params_map["actions"]:
+                print(params_map["actions"])
+                exit(0)
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            exit(1)
 
     if mode == 'list':
         if target_path is None or args.indexid is None:
@@ -655,7 +658,11 @@ if __name__ == "__main__":
                 clips_data.append(process_clip_data(get_clip_call(clip_id)))
             else:
                 print("Failed to get an clip data.")
+                
         objects_dict = GetObjectDict(clips_data,params_map)
+        if len(clips_data) == 0:
+            objects_dict = {}
+            
         if objects_dict and target_path:
             generate_xml_from_file_objects(objects_dict, target_path)
             print(f"Generated XML file: {target_path}")

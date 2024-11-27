@@ -146,6 +146,8 @@ def archiware_to_object_array(txt_file,params):
                     selected_count += 1
                     total_size += int(file_object["size"])
                 file_object_list.append(file_object)
+            
+            output["filelist"] = file_object_list
 
         output["scanned_count"] = scanned_files
         output["selected_count"] = selected_count
@@ -249,15 +251,13 @@ if __name__ == '__main__':
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-id','--collection_id',help='collection_id')
     parser.add_argument('-tmp','--tmp_id',help='tmp_id')
-    parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
-    parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
-    parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
     parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
     parser.add_argument('--progressfile', required=False, help='Progress file for restore')
     parser.add_argument('--restoreticketpath', required=False, help='Restore ticket')
-    
+    parser.add_argument('-p', "--projectname", required=False, help = 'Project name')
+        
     args = parser.parse_args()
     mode = args.mode
     target_path = args.target
@@ -268,15 +268,17 @@ if __name__ == '__main__':
     
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
     config_map = loadConfigurationMap(args.config)
+    filter_file_dict = loadFilterPolicyFiles (args.jobguid)
 
     params_map = {}
     params_map["target"] = args.target
-    params_map["filtertype"] = args.filtertype
-    params_map["filterfile"] = args.filterfile
-    params_map["policyfile"] = args.policyfile
     params_map["indexid" ] = args.indexid
     params_map["jobguid"] = args.jobguid
     params_map["jobid"] = args.jobid
+
+    params_map["filtertype"] = filter_file_dict["type"]
+    params_map["filterfile"] = filter_file_dict["filterfile"]
+    params_map["policyfile"] = filter_file_dict["policyfile"]
 
     for key in config_map:
         if key in params_map:
@@ -285,8 +287,13 @@ if __name__ == '__main__':
             params_map[key] = config_map[key]
 
     if mode == 'actions':
-        print('list,bulkrestore')
-        exit(0)
+        try:
+            if params_map["actions"]:
+                print(params_map["actions"])
+                exit(0)
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            exit(1)
 
     if mode == "list":
         if target_path is None or args.indexid is None:
@@ -296,15 +303,15 @@ if __name__ == '__main__':
         txt_file_path = list_index()
         if os.path.exists(txt_file_path):
             objects_dict = archiware_to_object_array(txt_file_path,params_map)
-            if objects_dict and target_path:
-                generate_xml_from_file_objects(objects_dict, target_path)
-                print(f"Generated XML file: {target_path}")
-                exit(0)
-            else:
-                print("Failed to generate XML file.")
-                exit(1)
         else:
-            print("File path not found. Failed to get index inventory")
+            objects_dict ={}
+            
+        if objects_dict and target_path:
+            generate_xml_from_file_objects(objects_dict, target_path)
+            print(f"Generated XML file: {target_path}")
+            exit(0)
+        else:
+            print("Failed to generate XML file.")
             exit(1)
     
     elif mode == "bulkrestore":

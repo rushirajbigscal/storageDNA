@@ -7,16 +7,15 @@ from urllib import request
 import urllib3
 import hashlib
 
-domain = "https://apidemo.egnyte.com"
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def get_list_call(folder_path,recursive=None):
     if not folder_path:
         folder_path = ""
-    url = f"{domain}/pubapi/v1/fs/Shared/{folder_path}"
+    url = f"{config_map['domain']}/pubapi/v1/fs/Shared/{folder_path}"
     headers = {
-    'Authorization': f'Bearer {config_map['bearer_key']}'
+    'Authorization': f"Bearer {config_map['bearer_key']}"
     }
     params = {
         'list_content' : recursive
@@ -99,18 +98,18 @@ def get_list_call(folder_path,recursive=None):
     return response
 
 def download_file(file_id):
-    url = f"{domain}/pubapi/v1/fs-content/ids/file/{file_id}"
+    url = f"{config_map['domain']}/pubapi/v1/fs-content/ids/file/{file_id}"
     headers = {
-    'Authorization': f'Bearer {config_map['bearer_key']}'
+    'Authorization': f"Bearer {config_map['bearer_key']}"
     }
 
     response = requests.get(url,headers=headers)
     return True
 
 def create_folder(folder_path):
-    url = f"{domain}/pubapi/v1/fs/{folder_path}"
+    url = f"{config_map['domain']}/pubapi/v1/fs/{folder_path}"
     headers = {
-    'Authorization': f'Bearer {config_map['bearer_key']}'
+    'Authorization': f"Bearer {config_map['bearer_key']}"
     }
     json = {
     "action": "add_folder"
@@ -265,10 +264,12 @@ def GetObjectDict(data,params):
                 total_size += int(file_object["size"])
             file_object_list.append(file_object)
 
-        output["scanned_count"] = scanned_files
-        output["selected_count"] = selected_count
-        output["total_size"] = total_size
         output["filelist"] = file_object_list
+        
+    output["scanned_count"] = scanned_files
+    output["selected_count"] = selected_count
+    output["total_size"] = total_size
+    output["filelist"] = file_object_list
 
     return output
 
@@ -281,12 +282,11 @@ if __name__ == '__main__':
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-f','--foldername',help='folder_name_to_create')
     parser.add_argument('-tmp','--tmp_id',help='tmp_id')
-    parser.add_argument('-ft', '--filtertype', required=False, choices=['none', 'include', 'exclude'], help='Filter type')
-    parser.add_argument('-ff', '--filterfile', required=False, help='Extension file')
-    parser.add_argument('-pf', '--policyfile', required=False, help='Policy file')
     parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-ji', '--jobid', required=False, help = 'REQUIRED if bulk restore.')
+    parser.add_argument('-p', "--projectname", required=False, help = 'Project name')
+    
 
     args = parser.parse_args()
     mode = args.mode
@@ -295,20 +295,22 @@ if __name__ == '__main__':
     tmp_id = args.tmp_id
     target_path = args.target
 
-    logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
     config_map = loadConfigurationMap(args.config)
+    logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
+    filter_file_dict = loadFilterPolicyFiles (args.jobguid)
  
     params_map = {}
     params_map["foldername"] = args.foldername
     params_map["source"] = args.source
     params_map["target"] = args.target
-    params_map["filtertype"] = args.filtertype
-    params_map["filterfile"] = args.filterfile
-    params_map["policyfile"] = args.policyfile
     params_map["indexid" ] = args.indexid
     params_map["jobguid"] = args.jobguid
     params_map["jobid"] = args.jobid
 
+    params_map["filtertype"] = filter_file_dict["type"]
+    params_map["filterfile"] = filter_file_dict["filterfile"]
+    params_map["policyfile"] = filter_file_dict["policyfile"]
+    
     for key in config_map:
         if key in params_map:
             print(f'Skipping existing key {key}')
@@ -316,12 +318,20 @@ if __name__ == '__main__':
             params_map[key] = config_map[key]
 
     if mode == 'actions':
-        print('upload,browse,download,list,createfolder')
-        exit(0)
+        try:
+            if params_map["actions"]:
+                print(params_map["actions"])
+                exit(0)
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            exit(1)
 
     if mode == 'list':
         data = get_list_call(folder_path,recursive="true")
         objects_dict = GetObjectDict(data,params_map)
+        if len(data) == 0:
+            objects_dict = {}
+            
         if objects_dict and target_path:
             generate_xml_from_file_objects(objects_dict, target_path)
             print(f"Generated XML file: {target_path}")
