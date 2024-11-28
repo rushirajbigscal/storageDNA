@@ -423,11 +423,15 @@ def loadConfigurationMap(config_name):
     #     if config_parser.has_section('General') and config_parser.has_option('General','cloudconfigfolder'):
     #         section_info = config_parser['General']
     #         cloudTargetPath = section_info['cloudconfigfolder'] + "/cloud_targets.conf"
+    #         tapeProxyPath = section_info['tapeproxypath']
+            
+    
     # else:
     #     with open(DNA_CLIENT_SERVICES, 'rb') as fp:
     #         my_plist = plistlib.load(fp)
     #         cloudTargetPath = my_plist["CloudConfigFolder"] + "/cloud_targets.conf"
-    
+    #         tapeProxyPath = section_info['tapeproxypath']
+
     cloudTargetPath = "D:\\storageDNA\\cloud_targets.conf"
     if not os.path.exists(cloudTargetPath):
         err= "Unable to find cloud target file: " + cloudTargetPath
@@ -439,11 +443,58 @@ def loadConfigurationMap(config_name):
         err = 'Unable to find cloud configuration: ' + config_name
         sys.exit(err)
 
+    tapeProxyPath = "/test/123"
+    config_map["tapeproxypath"] = tapeProxyPath
     cloud_config_info = config_parser[config_name]
     for  key in cloud_config_info:
          config_map[key] = cloud_config_info[key]
-
+         
     return config_map
+
+
+def check_if_catalog_file_exists(catalog_path, file_name, file_time):
+    if catalog_path.endswith("/"):
+        catalog_file_path = catalog_path + file_name
+    else:
+        catalog_file_path = catalog_path + "/" + file_name
+
+    #print (f'File - ({file_name}) time = {int(file_time)}') 
+    ##Here we're replacing the folder paths with spaces before and after with $_ and _$ respectively to prevent catalog not found error.
+    if not os.path.exists(catalog_file_path):
+        #print ("CATALOG FILE NOT FOUND for = "+catalog_file_path)
+        catalog_file_parts_list = catalog_file_path.split("/")
+        for i, part in enumerate(catalog_file_parts_list):
+            #print (f"OLD PART = {part}...")
+            if part != "":
+                if part.endswith(" ") and part.startswith(" "):
+                    #print(f"1 HERE with part = {part}")
+                    part = f"$_{part}_$"
+                elif part.endswith(" "):
+                    #print(f"2 HERE with part = {part}")
+                    part = f"{part}_$"
+                elif part.startswith(" "):
+                    #print(f"3 HERE with part = {part}")
+                    part = f"$_{part}"
+                elif ":" in part:
+                    #print(f"4 HERE with part = {part}")
+                    part = part.replace(":","$;$")
+            #print (f"NEW PART = {part}...")
+            catalog_file_parts_list[i] = part
+        catalog_file_path = ("/").join(catalog_file_parts_list)
+
+    #print ("NEW CATALOG FILE built = "+catalog_file_path)   
+    if not os.path.exists(catalog_file_path):
+        #print ("Catalog file not found. Returning.")
+        return False
+    else:
+        #print (f'M-time catalog file - ({file_name}) = {int(os.path.getmtime(catalog_file_path))}.')
+        if int(os.path.getmtime(catalog_file_path)) == int(file_time):
+            #print (f'SKIPPING FILE - {file_name}\n')
+            return True     
+        else:
+            return False
+
+
 
 # def restore_ticket_to_csv(xml_ticket):
 #     csv_file = xml_ticket.replace(".xml",".csv")

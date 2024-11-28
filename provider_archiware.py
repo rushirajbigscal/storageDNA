@@ -52,7 +52,7 @@ def csv_to_json(csv_file_path):
     return json_output
 
 
-def archiware_to_object_array(txt_file,params):
+def archiware_to_object_array(txt_file,params,catalog_path):
     scanned_files = 0
     selected_count = 0
     output = {}
@@ -127,6 +127,13 @@ def archiware_to_object_array(txt_file,params):
                 elif include_file and len(policy_entries) > 0:
                     include_file = file_in_policy(policy_dict, file_name, file_path, file_size, mtime_epoch_seconds)
 
+            if check_if_catalog_file_exists(catalog_path, file_path, mtime_epoch_seconds):
+                continue
+                
+            file_path = file_path.replace("//","")
+            file_path = file_path.replace("&","&amp;")
+            file_path = file_path.replace("\"","&quot;")
+            
             file_object = {}
             if include_file:
                 file_object["name"] = file_path
@@ -249,6 +256,7 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--mode', required = True, help = 'upload,browse,download,list,actions')
     parser.add_argument('-s','--source',help='source file')
     parser.add_argument('-t','--target',help='target_path')
+    parser.add_argument('-l', '--label', required=False, help = 'REQUIRED for list if a label is included.')
     parser.add_argument('-id','--collection_id',help='collection_id')
     parser.add_argument('-tmp','--tmp_id',help='tmp_id')
     parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
@@ -264,17 +272,24 @@ if __name__ == '__main__':
     restore_ticket_path = args.restoreticketpath
     progress_file = args.progressfile
     job_guid = args.jobguid
-
+    label = args.label
+    source_path = args.source
+    project_name = args.projectname
+    
     
     logging_dict = loadLoggingDict(os.path.basename(__file__), args.jobguid)
     config_map = loadConfigurationMap(args.config)
     filter_file_dict = loadFilterPolicyFiles (args.jobguid)
 
     params_map = {}
+    params_map["source_path"] = args.source
     params_map["target"] = args.target
     params_map["indexid" ] = args.indexid
     params_map["jobguid"] = args.jobguid
     params_map["jobid"] = args.jobid
+    params_map["label"] = args.label
+    params_map["project_name"] = args.projectname
+    
 
     params_map["filtertype"] = filter_file_dict["type"]
     params_map["filterfile"] = filter_file_dict["filterfile"]
@@ -286,6 +301,31 @@ if __name__ == '__main__':
         else:
             params_map[key] = config_map[key]
 
+    if source_path.endswith("/./"):
+        strip_path = True
+        keep_top = False
+        source_path = source_path.replace("/./","")
+    elif "/./" in source_path:
+        source_path = source_path.replace("/./", "/")
+        strip_path = True
+        keep_top = True
+        
+    if source_path.endswith("/"):
+         source_path = source_path[:-1]
+    
+    if len(label) == 0:
+        baseCatalogPath = params_map['tapeproxypath'] + "/" + project_name + "/1"
+    else:
+        baseCatalogPath = params_map['tapeproxypath'] + "/" + project_name + "/1/" + label
+    
+    if not strip_path and not keep_top:
+        catalogPath = baseCatalogPath + source_path + "/"
+    elif strip_path and not keep_top:
+        catalogPath = baseCatalogPath + "/"
+    elif strip_path and keep_top:
+        catalogPath = baseCatalogPath + "/" + source_path.split("/")[-1] + "/"
+    
+        
     if mode == 'actions':
         try:
             if params_map["actions"]:
@@ -302,7 +342,7 @@ if __name__ == '__main__':
             
         txt_file_path = list_index()
         if os.path.exists(txt_file_path):
-            objects_dict = archiware_to_object_array(txt_file_path,params_map)
+            objects_dict = archiware_to_object_array(txt_file_path,params_map,catalogPath)
         else:
             objects_dict ={}
             
