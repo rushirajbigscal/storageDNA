@@ -506,12 +506,33 @@ if __name__ == '__main__':
         else:
             collections = get_list_of_collections()
         for collection in collections:
-            collection_name.append({"name" : collection["attributes"]["name"],
+            collectionname = f"{collection['id']}:{collection['attributes']['name']}"
+            collection_name.append({"name" : collectionname,
                                 "id" : collection["id"]
                                 })
         xml_output = add_CDATA_tags_with_id(collection_name)
         print(xml_output)
         exit(0)
+        
+    elif mode == 'buckets':
+        buckets = []
+        collections = get_list_of_collections()
+        for collection in collections:
+            buckets.append(f"{collection['id']}:{collection['attributes']['name']}")
+        print(','.join(buckets))
+        exit(0)
+        
+    elif mode == 'bucketsfolders':
+        folders = []
+        collections = get_list_of_collections() 
+        for collection in collections:
+            folders.append({"name" : collection["attributes"]["name"],
+                                "id" : collection["id"]
+                                })
+                
+        xml_output = add_CDATA_tags_with_id(folders)
+        print(xml_output)
+        exit(0)    
 
     elif mode == "download":
         if target_path is None or tmp_id is None:
