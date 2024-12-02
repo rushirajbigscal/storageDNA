@@ -495,6 +495,60 @@ def check_if_catalog_file_exists(catalog_path, file_name, file_time):
             return False
 
 
+def get_catalog_path(params_map):
+    if params_map['source'] is not None:
+        source_path = params_map['source']
+    else:
+        source_path = ""
+    if params_map['label'] is not None:
+        label = params_map['label']
+    else:
+        label = ""
+    if params_map['project_name'] is not None:
+        project_name = params_map['project_name']
+    else:
+        project_name = "" 
+         
+    strip_path = False
+    keep_top = False  
+    
+    if source_path.endswith("/./"):
+        strip_path = True
+        keep_top = False
+        source_path = source_path.replace("/./","")
+    elif "/./" in source_path:
+        source_path = source_path.replace("/./", "/")
+        strip_path = True
+        keep_top = True
+        
+    if source_path.endswith("/"):
+        source_path = source_path[:-1]
+    
+    if len(label) == 0:
+        baseCatalogPath = params_map['tapeproxypath'] + "/" + project_name + "/1"
+    else:
+        baseCatalogPath = params_map['tapeproxypath'] + "/" +project_name + "/1/" + label
+    
+    if not strip_path and not keep_top:
+        catalogPath = baseCatalogPath + source_path + "/"
+    elif strip_path and not keep_top:
+        catalogPath = baseCatalogPath + "/"
+    elif strip_path and keep_top:
+        catalogPath = baseCatalogPath + "/" + source_path.split("/")[-1] + "/"
+    
+    return catalogPath
+
+def replace_file_path(file_path):
+    replace = {
+        "//": "",
+        "&": "&amp;",
+        "\"": "&quot;"
+    }
+
+    for key, value in replace.items():
+        file_path = file_path.replace(key, value)
+    
+    return file_path
 
 # def restore_ticket_to_csv(xml_ticket):
 #     csv_file = xml_ticket.replace(".xml",".csv")

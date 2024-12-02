@@ -130,9 +130,7 @@ def archiware_to_object_array(txt_file,params,catalog_path):
             if check_if_catalog_file_exists(catalog_path, file_path, mtime_epoch_seconds):
                 continue
                 
-            file_path = file_path.replace("//","")
-            file_path = file_path.replace("&","&amp;")
-            file_path = file_path.replace("\"","&quot;")
+            file_path = replace_file_path(file_path)
             
             file_object = {}
             if include_file:
@@ -206,6 +204,7 @@ def list_index():
         strdata_to_logging_file(url, logging_dict["logging_filename"])
 
     filepath = filepath.replace("/host_dir","")
+    print(filepath)
     return filepath
 
 def restore_request_call(csv_file):
@@ -282,7 +281,7 @@ if __name__ == '__main__':
     filter_file_dict = loadFilterPolicyFiles (args.jobguid)
 
     params_map = {}
-    params_map["source_path"] = args.source
+    params_map["source"] = args.source
     params_map["target"] = args.target
     params_map["indexid" ] = args.indexid
     params_map["jobguid"] = args.jobguid
@@ -300,31 +299,6 @@ if __name__ == '__main__':
             print(f'Skipping existing key {key}')
         else:
             params_map[key] = config_map[key]
-
-    if source_path.endswith("/./"):
-        strip_path = True
-        keep_top = False
-        source_path = source_path.replace("/./","")
-    elif "/./" in source_path:
-        source_path = source_path.replace("/./", "/")
-        strip_path = True
-        keep_top = True
-        
-    if source_path.endswith("/"):
-         source_path = source_path[:-1]
-    
-    if len(label) == 0:
-        baseCatalogPath = params_map['tapeproxypath'] + "/" + project_name + "/1"
-    else:
-        baseCatalogPath = params_map['tapeproxypath'] + "/" + project_name + "/1/" + label
-    
-    if not strip_path and not keep_top:
-        catalogPath = baseCatalogPath + source_path + "/"
-    elif strip_path and not keep_top:
-        catalogPath = baseCatalogPath + "/"
-    elif strip_path and keep_top:
-        catalogPath = baseCatalogPath + "/" + source_path.split("/")[-1] + "/"
-    
         
     if mode == 'actions':
         try:
@@ -339,13 +313,15 @@ if __name__ == '__main__':
         if target_path is None or args.indexid is None:
             print('Target path (-t <targetpath> ) -in <index>  options are required for list')
             exit(1)
-            
+        
+        catalog_path = get_catalog_path(params_map)
         txt_file_path = list_index()
-        if os.path.exists(txt_file_path):
-            objects_dict = archiware_to_object_array(txt_file_path,params_map,catalogPath)
-        else:
-            objects_dict ={}
-            
+        if txt_file_path:
+            if os.path.exists(txt_file_path):
+                objects_dict = archiware_to_object_array(txt_file_path,params_map,catalog_path)
+            else:
+                objects_dict ={}
+                
         if objects_dict and target_path:
             generate_xml_from_file_objects(objects_dict, target_path)
             print(f"Generated XML file: {target_path}")
