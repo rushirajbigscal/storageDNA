@@ -204,6 +204,7 @@ def list_index():
         strdata_to_logging_file(url, logging_dict["logging_filename"])
 
     filepath = filepath.replace("/host_dir","")
+    print(filepath)
     return filepath
 
 def restore_request_call(csv_file):
@@ -315,11 +316,12 @@ if __name__ == '__main__':
         
         catalog_path = get_catalog_path(params_map)
         txt_file_path = list_index()
-        if os.path.exists(txt_file_path):
-            objects_dict = archiware_to_object_array(txt_file_path,params_map,catalog_path)
-        else:
-            objects_dict ={}
-            
+        if txt_file_path:
+            if os.path.exists(txt_file_path):
+                objects_dict = archiware_to_object_array(txt_file_path,params_map,catalog_path)
+            else:
+                objects_dict ={}
+                
         if objects_dict and target_path:
             generate_xml_from_file_objects(objects_dict, target_path)
             print(f"Generated XML file: {target_path}")
