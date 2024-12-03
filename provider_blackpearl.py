@@ -1,7 +1,7 @@
 import argparse
 import os
 import urllib3
-import datetime
+from datetime import datetime
 from action_functions import *
 from ds3 import ds3, ds3Helpers
 
