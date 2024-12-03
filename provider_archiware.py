@@ -319,8 +319,8 @@ if __name__ == '__main__':
         if txt_file_path:
             if os.path.exists(txt_file_path):
                 objects_dict = archiware_to_object_array(txt_file_path,params_map,catalog_path)
-            else:
-                objects_dict ={}
+        else:
+            objects_dict ={}
                 
         if objects_dict and target_path:
             generate_xml_from_file_objects(objects_dict, target_path)
