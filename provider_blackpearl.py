@@ -7,9 +7,26 @@ from ds3 import ds3, ds3Helpers
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
 def get_bucket_objects(ds3Client, bucket : str, maxKeys : int, marker : str, full_object_list : list):
-    bucket_contents = ds3Client.get_bucket(ds3.GetBucketRequest(bucket, max_keys=maxKeys, marker=marker))
+    bucket_request = ds3.GetBucketRequest(bucket, max_keys=maxKeys, marker=marker)
+    try : 
+      bucket_contents = ds3Client.get_bucket(bucket_request)
+    except Exception as e:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(f"Error while accessing the contents of the bucket: {bucket} with maxKeys: {maxKeys} and marker: {marker}", logging_dict["logging_error_filename"])
+        print(f"Error while accessing the contents of the bucket: {e}")
+        return False
     bucket_contents_result = bucket_contents.result
+    if len(bucket_contents_result) == 0:
+        if logging_dict["logging_level"] > 0:
+            strdata_to_logging_file(f"Error while accessing the contents of the bucket: {bucket} with maxKeys: {maxKeys} and marker: {marker}", logging_dict["logging_error_filename"])
+        print(f"Error while accessing the contents of the bucket: {bucket} with maxKeys: {maxKeys} and marker: {marker}")
+        return False
+    elif logging_dict["logging_level"] > 1:
+        print('*****')
+        strdata_to_logging_file(f"Successfully accessed the contents of the bucket: {bucket} with maxKeys: {maxKeys} and marker: {marker}", logging_dict["logging_filename"])
+
     if bucket_contents_result["IsTruncated"] == 'true':
         marker = bucket_contents_result["NextMarker"]
         return get_bucket_objects(ds3Client, bucket, maxKeys, marker, full_object_list + bucket_contents_result["ContentsList"])
@@ -57,7 +74,7 @@ def GetObjectDict(files_list : list,params):
 
 
     for file_item in files_list:
-        mtime_struct = datetime.strptime(file_item['LastModified'].split(".")[0], "%Y-%m-%dT%H:%M:%SZ") 
+        mtime_struct = datetime.strptime(file_item['LastModified'].split(".")[0], "%Y-%m-%dT%H:%M:%S") 
         mtime_epoch_seconds = int(mtime_struct.timestamp())
         file_path = file_item['Key']
         file_name = get_filename(file_path)
@@ -119,7 +136,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required = True, help = 'Configuration name')
     parser.add_argument('-m', '--mode', required = True, help = 'upload,browse,download,list,actions')
-    parser.add_argument('-b', '--bucket', required = True, help = 'Blackpearl bucket to scan.')
+    parser.add_argument('-b', '--bucket', required = False, help = 'Blackpearl bucket to scan.')
     parser.add_argument('-t','--target',help='target_path')
     parser.add_argument('-in', '--indexid', required=False, help = 'REQUIRED if list')
     parser.add_argument('-jg', '--jobguid', required=False, help = 'REQUIRED if list')
@@ -165,8 +182,8 @@ if __name__ == '__main__':
             exit(1)
     
     if mode == 'list':
-        if target_path is None or args.indexid is None:
-            print('Target path (-t <targetpath> ) -in <index>  options are required for list')
+        if target_path is None or args.indexid is None or bucket is None:
+            print('Target path (-t <targetpath> ) -in <index> and Bucket (-b <bucketname>) options are required for list')
             exit(1)
         access_key = params_map["access_key"]
         secret_key = params_map["secret_key"]
@@ -178,8 +195,9 @@ if __name__ == '__main__':
         max_keys = 500000
         marker = ""
         bucket_contents_files_info_list = get_bucket_objects(ds3_client, bucket, max_keys, marker, full_list)
-        objects_dict = GetObjectDict(bucket_contents_files_info_list,params_map)
-        if len(bucket_contents_files_info_list) == 0:
+        if bucket_contents_files_info_list:
+            objects_dict = GetObjectDict(bucket_contents_files_info_list,params_map)
+        else:
             objects_dict = {}
         if target_path:
             generate_xml_from_file_objects(objects_dict, target_path)

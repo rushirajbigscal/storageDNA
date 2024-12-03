@@ -550,6 +550,11 @@ def replace_file_path(file_path):
     
     return file_path
 
+def strdata_to_logging_file(str_data, filename):
+    f = open(filename, "a")
+    f.write(f'{str_data}\n')
+    f.close()
+
 # def restore_ticket_to_csv(xml_ticket):
 #     csv_file = xml_ticket.replace(".xml",".csv")
 #     tree = ET.parse(xml_ticket)
