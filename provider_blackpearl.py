@@ -24,7 +24,6 @@ def get_bucket_objects(ds3Client, bucket : str, maxKeys : int, marker : str, ful
         print(f"Error while accessing the contents of the bucket: {bucket} with maxKeys: {maxKeys} and marker: {marker}")
         return False
     elif logging_dict["logging_level"] > 1:
-        print('*****')
         strdata_to_logging_file(f"Successfully accessed the contents of the bucket: {bucket} with maxKeys: {maxKeys} and marker: {marker}", logging_dict["logging_filename"])
 
     if bucket_contents_result["IsTruncated"] == 'true':
