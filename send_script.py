@@ -1,15 +1,13 @@
-from fastapi import FastAPI , Request,HTTPException
-from fastapi.responses import JSONResponse
+from flask import Flask, request, jsonify
 import requests
 import os
-from action_functions import *
+from action_functions import *  
+app = Flask(__name__)
 
-app = FastAPI()
-
-@app.post("/send")
-async def print_payload(request: Request):
+@app.route('/send', methods=['POST'])
+def print_payload():
     try:
-        payload = await request.json()
+        payload = request.get_json()
         url = payload["downloadableFile"]
         filename = get_filename(url)
         print(filename)
@@ -18,18 +16,16 @@ async def print_payload(request: Request):
         if response.status_code == 200:
             with open(filename, 'wb') as file:
                 file.write(response.content)
-            print(f"File download at {filename}")
+            print(f"File downloaded at {filename}")
         else:
-            print("Failed")
+            print("Failed to download the file.")
         
         print("Request Payload:", payload)
-        return JSONResponse(
-            status_code=200,
-            content={"message": "Payload received" ,"Data": payload},
-        )
+        return jsonify({"message": "Payload received", "Data": payload}), 200
     
     except Exception as e:
-        return JSONResponse(
-            status_code=400,
-            content={"message": "An error occurred while processing the payload."},
-        )
+        print(f"An error occurred: {str(e)}")
+        return jsonify({"message": "An error occurred while processing the payload."}), 400
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0",port=5000)
