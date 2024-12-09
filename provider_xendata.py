@@ -245,8 +245,8 @@ if __name__ == '__main__':
             
         if data['requestStatus'] == "Success":
             for item in data['requestResults']:
-                if item['File-Type'] == 'Folder':
-                    folders.append(get_filename(item['File-Path']))
+                folder = item['File-Path'].split('\\')[-1]
+                folders.append(folder)
 
         xml_output = add_CDATA_tags(folders)
         print(xml_output)
