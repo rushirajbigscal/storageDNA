@@ -218,7 +218,6 @@ if __name__ == '__main__':
         while state_name not in END_STATES:
             listing_json_responce = GetRequestStatus(requestId)
             state_name = listing_json_responce['requestStatus']
-            print(state_name)
             time.sleep(5)
 
         objects_dict = GetObjectDict(listing_json_responce,params_map)
@@ -235,33 +234,20 @@ if __name__ == '__main__':
 
 
     elif mode == 'browse':
-        if folder_name is None:
-            print('Folder name (-f <foldername> ) options are required for browse.')
-            exit(1)
-
-        folders = set()
+        folders = []
         all_objs_list = GetAllObjects(folder,recursive='false')
         requestId = all_objs_list['requestId'] 
         state_name = ""
         while state_name not in END_STATES:
             data = GetRequestStatus(requestId)
             state_name = data['requestStatus']
-            print(state_name)
             time.sleep(1)
             
         if data['requestStatus'] == "Success":
             for item in data['requestResults']:
-                path =os.path.normpath(folder_name)  
-                File_Path = os.path.normpath(item['File-Path'])
+                if item['File-Type'] == 'Folder':
+                    folders.append(get_filename(item['File-Path']))
 
-                if item['File-Type'] == 'Folder' and File_Path.startswith(path):
-                    difference = File_Path[len(path):]
-                    split_values  = difference.split("\\")
-                    split_values = [value for value in split_values if value]
-                    if split_values:
-                        folders.add(split_values[0])
-
-        folders = list(folders)
         xml_output = add_CDATA_tags(folders)
         print(xml_output)
         exit(0)
