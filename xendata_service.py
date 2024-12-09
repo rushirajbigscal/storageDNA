@@ -47,8 +47,6 @@ def data_export(filter_value, path_value, recursive, output_file, status_file):
 
     result = subprocess.run(command, capture_output=True, text=True)
 
-    logging.info(f"Output: {result.stdout}")
-
     if result.returncode == 0:
         with open(status_file, 'w') as f:
             f.write('Success')
@@ -106,9 +104,9 @@ def xen_export_status(req_uuid):
     }
 
     if status == 'Success' and os.path.exists(export_file_path):
-        with open(export_file_path, 'r') as csvfile:
-            csvreader = csv.DictReader(csvfile, delimiter='|')
-            data['requestResults'] = [row for row in csvreader]
+        with open(export_file_path, encoding='utf-8', errors='ignore') as csvfile:
+            csvdata = csv.DictReader(csvfile, delimiter='|')
+            data['requestResults'] = [row for row in csvdata]
 
     return jsonify(data), 200
 
