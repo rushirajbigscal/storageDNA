@@ -9,6 +9,7 @@ import logging
 
 app = Flask(__name__)
 temp_output_dir = "C:\\temp"  # temporary output directory
+os.makedirs(temp_output_dir,exist_ok=True)
 
 logging.basicConfig(filename=os.path.join(temp_output_dir, 'service.log'), level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 

@@ -12,7 +12,8 @@ from datetime import datetime
 def txt_file_to_regex_pattern(txt_file_path):
     with open(txt_file_path,'r') as txt:
         symobles =  ''.join(text.strip() for text in txt)
-        pattern = f"[{re.escape(symobles)}]"
+        # pattern = f"[{re.escape(symobles)}]"
+        pattern = "[{}]".format(re.escape(symobles))
         return pattern
 
 def open_csv_file(given_filename):
@@ -36,7 +37,7 @@ def illegal_char(target_path,dry_run,csv_file_path,pattern):
 
             for file_name in files:
                 file_path_illegal = os.path.join(root,file_name)
-                filename = file_name.strip().replace("  ","")
+                filename = file_name.strip().replace("  "," ")
                 filename = re.sub(pattern,"",filename)
                 file_path_legal = os.path.join(root,filename)
                 if file_path_legal != file_path_illegal:
@@ -51,7 +52,7 @@ def illegal_char(target_path,dry_run,csv_file_path,pattern):
                 
             for i ,dir_name in enumerate(dirs):
                 dir_path_illegal = os.path.join(root,dir_name)
-                dirname = dir_name.strip().replace("  ","")
+                dirname = dir_name.strip().replace("  "," ")
                 dirname = re.sub(pattern,"",dirname)
                 dir_path_legal = os.path.join(root,dirname)
                 if dir_path_legal != dir_path_illegal:

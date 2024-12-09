@@ -199,13 +199,17 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             exit(1)
-
+            
+    if folder_name:
+        folder = os.path.join(params_map["default_list_path"],folder_name)
+    else:
+        folder = params_map["default_list_path"]
+        
     if mode == 'list':
-        if target_path is None or folder_name is None or args.indexid is None:
-            print('Target path (-t <targetpath> ) and folder name (-f <foldername> ) -in <index>  options are required for list')
+        if target_path is None or args.indexid is None:
+            print('Target path (-t <targetpath> ) and -in <index>  options are required for list')
             exit(1)
-
-        all_objs_list = GetAllObjects(folder_name,recursive='true')
+        all_objs_list = GetAllObjects(folder,recursive='true')
         if not all_objs_list['requestId']:
             exit(1)
 
@@ -236,7 +240,7 @@ if __name__ == '__main__':
             exit(1)
 
         folders = set()
-        all_objs_list = GetAllObjects(folder_name,recursive='false')
+        all_objs_list = GetAllObjects(folder,recursive='false')
         requestId = all_objs_list['requestId'] 
         state_name = ""
         while state_name not in END_STATES:
