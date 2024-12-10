@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import requests
 import os
 from action_functions import *  
+
 app = Flask(__name__)
 
 @app.route('/send', methods=['POST'])
@@ -9,7 +10,7 @@ def print_payload():
     try:
         payload = request.get_json()
         url = payload["downloadableFile"]
-        filename = get_filename(url)
+        filename = os.path.join('C:\\temp',get_filename(url))
         print(filename)
         response = requests.get(url)
         print(response.status_code)
