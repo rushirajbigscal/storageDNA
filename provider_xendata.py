@@ -97,7 +97,7 @@ def GetObjectDict(data : dict,params):
         mtime_epoch_seconds = int(mtime_struct.timestamp())
         atime_epoch_seconds = int(atime_struct.timestamp())
         file_path = result["File-Path"]
-        file_name = get_filename(file_path)
+        file_name = file_path.split('\\')[-1]
         file_size = result["File-Size"] if result["File-Type"] == "File" else "0"
         file_type = "file" if file_size != "0" else "dir"
         
