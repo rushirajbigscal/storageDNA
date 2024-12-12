@@ -37,4 +37,5 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--path', required = True, help = 'path')
     args = parser.parse_args()
     default_path = args.path
+    os.makedirs(default_path,exist_ok=True)
     app.run(host="0.0.0.0",port=5000)
