@@ -359,7 +359,7 @@ def loadLoggingDict(logging_suffix, job_guid):
         DNA_CLIENT_SERVICES = '/etc/StorageDNA/DNAClientServices.conf'
     else:
         DNA_CLIENT_SERVICES = '/Library/Preferences/com.storagedna.DNAClientServices.plist'
-    DNA_CLIENT_SERVICES = "D:/storageDNA/DNAClientServices.conf"
+    DNA_CLIENT_SERVICES = "/home/rushiraj/storageDNA/DNAClientServices.conf"
 
     if not os.path.exists(DNA_CLIENT_SERVICES):
         print(f'Unable to find configuration file: {DNA_CLIENT_SERVICES}')
@@ -370,7 +370,7 @@ def loadLoggingDict(logging_suffix, job_guid):
     logging_available = False
     logging_dict["logging_level"] = 0
 
-    if os.path.isdir("D:/storageDNA"):
+    if os.path.isdir("/home/rushiraj/storageDNA"):
         config_parser = ConfigParser()
         config_parser.read(DNA_CLIENT_SERVICES)
         if config_parser.has_section('General'):
@@ -432,7 +432,7 @@ def loadConfigurationMap(config_name):
     #         cloudTargetPath = my_plist["CloudConfigFolder"] + "/cloud_targets.conf"
     #         tapeProxyPath = section_info['tapeproxypath']
 
-    cloudTargetPath = "D:\\storageDNA\\cloud_targets.conf"
+    cloudTargetPath = "/home/rushiraj/storageDNA/cloud_targets.conf"
     if not os.path.exists(cloudTargetPath):
         err= "Unable to find cloud target file: " + cloudTargetPath
         sys.exit(err)
